@@ -206,7 +206,8 @@ public class ScopeManager {
          * @throws ScopeAlreadyClosedException if the scope is closed.
          */
         public void requireNotClosed() {
-            if (isClosed) throw new ScopeAlreadyClosedException();
+            if (isClosed)
+                throw new ScopeAlreadyClosedException();
         }
 
 
