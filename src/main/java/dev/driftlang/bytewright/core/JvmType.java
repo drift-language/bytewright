@@ -19,7 +19,17 @@ import java.util.Optional;
 import static java.lang.constant.ConstantDescs.*;
 
 /**
- *
+ * A JVM type, as seen by ByteWright: a thin, immutable wrapper around a
+ * {@link ClassDesc}.
+ * <p>
+ * It covers primitives, {@code void}, reference types, and arrays. It is
+ * the type vocabulary shared by the whole toolkit (for instance, the type of
+ * a {@link Value}). ByteWright never inspects the consuming language's own
+ * type system: callers map their types to {@code JvmType} instances.
+ * <p>
+ * Common primitive types and {@code Object} are available as constants;
+ * any other type can be built with the {@code of} and {@code arrayOf}
+ * factory methods.
  *
  * @author Jonathan (GitHub: belicfr)
  */
