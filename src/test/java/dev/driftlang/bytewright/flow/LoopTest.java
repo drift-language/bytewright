@@ -10,8 +10,8 @@
 
 package dev.driftlang.bytewright.flow;
 
-import dev.driftlang.bytewright.flow.exception.LoopAlreadyStartedException;
-import dev.driftlang.bytewright.flow.exception.LoopNotStartedException;
+import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
+import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
 import org.junit.jupiter.api.Test;
@@ -120,17 +120,17 @@ class LoopTest {
     }
 
     @Test
-    void start_calledTwice_throwsLoopAlreadyStartedException() {
+    void start_calledTwice_throwsFlowAlreadyStartedException() {
         // GIVEN a loop that has already been started
         // WHEN starting it a second time
-        // THEN a LoopAlreadyStartedException is thrown
+        // THEN a FlowAlreadyStartedException is thrown
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Loop loop = new Loop(manager.scope());
             loop.start();
 
             loop.start();
-        })).isInstanceOf(LoopAlreadyStartedException.class);
+        })).isInstanceOf(FlowAlreadyStartedException.class);
     }
 
     @Test
@@ -148,16 +148,16 @@ class LoopTest {
     }
 
     @Test
-    void continue_beforeStart_throwsLoopNotStartedException() {
+    void continue_beforeStart_throwsFlowNotStartedException() {
         // GIVEN a loop that has not been started
         // WHEN continuing it
-        // THEN a LoopNotStartedException is thrown
+        // THEN a FlowNotStartedException is thrown
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Loop loop = new Loop(manager.scope());
 
             loop.continue_();
-        })).isInstanceOf(LoopNotStartedException.class);
+        })).isInstanceOf(FlowNotStartedException.class);
     }
 
     @Test
@@ -191,16 +191,16 @@ class LoopTest {
     }
 
     @Test
-    void break_beforeStart_throwsLoopNotStartedException() {
+    void break_beforeStart_throwsFlowNotStartedException() {
         // GIVEN a loop that has not been started
         // WHEN breaking it
-        // THEN a LoopNotStartedException is thrown
+        // THEN a FlowNotStartedException is thrown
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Loop loop = new Loop(manager.scope());
 
             loop.break_();
-        })).isInstanceOf(LoopNotStartedException.class);
+        })).isInstanceOf(FlowNotStartedException.class);
     }
 
     @Test

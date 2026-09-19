@@ -10,10 +10,10 @@
 
 package dev.driftlang.bytewright.flow.exception;
 
-public class LoopAlreadyStartedException extends RuntimeException {
+public class UnexpectedSwitchKindException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return "The loop is already started.";
+        return "Unexpected kind of switch. Kind should be 'TABLE' or 'LOOKUP'.";
     }
 }

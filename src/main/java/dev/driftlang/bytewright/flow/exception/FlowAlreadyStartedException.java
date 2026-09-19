@@ -10,10 +10,10 @@
 
 package dev.driftlang.bytewright.flow.exception;
 
-public class LoopNotStartedException extends RuntimeException {
+public class FlowAlreadyStartedException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return "The loop has not started yet.";
+        return "The flow operation is already started.";
     }
 }

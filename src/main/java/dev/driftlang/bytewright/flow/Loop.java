@@ -10,10 +10,7 @@
 
 package dev.driftlang.bytewright.flow;
 
-import dev.driftlang.bytewright.flow.exception.LoopAlreadyStartedException;
-import dev.driftlang.bytewright.flow.exception.LoopNotStartedException;
 import dev.driftlang.bytewright.scope.ScopeManager;
-import lombok.Getter;
 import lombok.NonNull;
 
 import java.lang.classfile.Label;
@@ -26,22 +23,14 @@ import java.lang.classfile.Label;
  *
  * @author Jonathan (GitHub: belicfr)
  */
-public class Loop implements AutoCloseable {
-
-    @Getter
-    @NonNull private final ScopeManager.Scope scope;
+public class Loop extends Flow {
 
     @NonNull private final Label bodyLabel;
-    @NonNull private final Label endLabel;
-
-    @Getter
-    private boolean started = false;
 
 
-    public Loop(@NonNull final ScopeManager.Scope parentScope) {
-        this.scope = parentScope.scope();
+    public Loop(/* NonNull */ final ScopeManager.Scope parentScope) {
+        super(parentScope);
         this.bodyLabel = getScope().getBuilder().newLabel();
-        this.endLabel = getScope().getBuilder().newLabel();
     }
 
 
@@ -50,12 +39,11 @@ public class Loop implements AutoCloseable {
      */
     public void start() {
         getScope().requireNotClosed();
-        requireNotStarted();
+
+        super.start();
 
         getScope().getBuilder()
                 .labelBinding(bodyLabel);
-
-        started = true;
     }
 
     /**
@@ -78,33 +66,5 @@ public class Loop implements AutoCloseable {
 
         getScope().getBuilder()
                 .goto_(endLabel);
-    }
-
-
-    @Override
-    public void close() {
-        getScope().requireNotClosed();
-
-        getScope().getBuilder()
-                .labelBinding(endLabel);
-
-        getScope().close();
-    }
-
-
-    /**
-     * @throws LoopAlreadyStartedException if the loop has already been started.
-     */
-    private void requireNotStarted() {
-        if (isStarted())
-            throw new LoopAlreadyStartedException();
-    }
-
-    /**
-     * @throws LoopNotStartedException if the loop has not been started yet.
-     */
-    private void requireStarted() {
-        if (!isStarted())
-            throw new LoopNotStartedException();
     }
 }
