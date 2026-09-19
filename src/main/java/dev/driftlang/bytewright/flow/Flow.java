@@ -19,6 +19,13 @@ import lombok.NonNull;
 import java.lang.classfile.Label;
 
 
+/**
+ * Base class for control flows. All its implementations share a common
+ * lifecycle: each opens its own sub-scope and closes it when done and gives an
+ * end label to go to for leaving the scope.
+ *
+ * @author Jonathan (GitHub: belicfr)
+ */
 public abstract class Flow implements AutoCloseable {
 
     @Getter
