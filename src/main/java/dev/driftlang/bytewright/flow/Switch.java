@@ -35,7 +35,7 @@ public class Switch extends Flow {
 
 
     public Switch(
-            /* NonNull */ final ScopeManager.Scope parentScope,
+            @NonNull final ScopeManager.Scope parentScope,
             @NonNull final Map<Integer, Label> caseLabels,
             @NonNull final Label defaultLabel) {
 
@@ -91,14 +91,6 @@ public class Switch extends Flow {
 
             default -> throw new UnexpectedSwitchKindException();
         }
-    }
-
-    public void break_() {
-        getScope().requireNotClosed();
-        requireStarted();
-
-        getScope().getBuilder()
-                .goto_(endLabel);
     }
 
     /**

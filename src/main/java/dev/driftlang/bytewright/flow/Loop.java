@@ -28,7 +28,7 @@ public class Loop extends Flow {
     @NonNull private final Label bodyLabel;
 
 
-    public Loop(/* NonNull */ final ScopeManager.Scope parentScope) {
+    public Loop(@NonNull final ScopeManager.Scope parentScope) {
         super(parentScope);
         this.bodyLabel = getScope().getBuilder().newLabel();
     }
@@ -55,16 +55,5 @@ public class Loop extends Flow {
 
         getScope().getBuilder()
                 .goto_(bodyLabel);
-    }
-
-    /**
-     * Breaks this loop by generating a goto to its end label.
-     */
-    public void break_() {
-        getScope().requireNotClosed();
-        requireStarted();
-
-        getScope().getBuilder()
-                .goto_(endLabel);
     }
 }

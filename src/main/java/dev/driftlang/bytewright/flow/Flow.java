@@ -64,6 +64,17 @@ public abstract class Flow implements AutoCloseable {
         getScope().close();
     }
 
+    /**
+     * Breaks this flow by generating a goto to its end label.
+     */
+    public void break_() {
+        getScope().requireNotClosed();
+        requireStarted();
+
+        getScope().getBuilder()
+                .goto_(endLabel);
+    }
+
 
     /**
      * @throws FlowNotStartedException if the flow operation has not been
