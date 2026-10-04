@@ -70,10 +70,7 @@ class SwitchTest {
     /**
      * Builds a {@link Switch} for the given case values, drives it through its
      * whole lifecycle (dispatch, every case body, the default body, and
-     * close), and returns it. The default body is bound directly via the raw
-     * {@link CodeBuilder}, since {@link Switch} deliberately exposes no way to
-     * bind it through {@link Switch#bodyEntry(int)} (that method is only for
-     * registered case values).
+     * close), and returns it.
      */
     private static Switch buildAndCompleteSwitch(final ScopeManager.Scope parentScope, final int... values) {
         final CodeBuilder builder = parentScope.getBuilder();
@@ -89,7 +86,7 @@ class SwitchTest {
         for (final int value : values) {
             switch_.bodyEntry(value);
         }
-        builder.labelBinding(defaultLabel);
+        switch_.defaultEntry();
         switch_.close();
 
         return switch_;
@@ -323,6 +320,34 @@ class SwitchTest {
     }
 
     @Test
+    void defaultEntry_beforeCompute_throwsFlowNotStartedException() {
+        // GIVEN a switch whose dispatch instruction hasn't been computed yet
+        // WHEN entering the default body
+        // THEN a FlowNotStartedException is thrown
+        assertThatThrownBy(() -> buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
+            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+
+            switch_.defaultEntry();
+        })).isInstanceOf(FlowNotStartedException.class);
+    }
+
+    @Test
+    void defaultEntry_afterClose_throwsScopeAlreadyClosedException() {
+        // GIVEN a switch that has already been closed
+        // WHEN entering the default body
+        // THEN a ScopeAlreadyClosedException is thrown
+        assertThatThrownBy(() -> buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
+            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+            switch_.start();
+            switch_.close();
+
+            switch_.defaultEntry();
+        })).isInstanceOf(ScopeAlreadyClosedException.class);
+    }
+
+    @Test
     void break_beforeCompute_throwsFlowNotStartedException() {
         // GIVEN a switch whose dispatch instruction hasn't been computed yet
         // WHEN breaking it
@@ -352,7 +377,7 @@ class SwitchTest {
             switch_.compute();
             switch_.bodyEntry(1);
             switch_.break_();
-            builder.labelBinding(defaultLabel);
+            switch_.defaultEntry();
             switch_.close();
         })).doesNotThrowAnyException();
     }
