@@ -13,6 +13,7 @@ package dev.driftlang.bytewright.flow;
 import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
 import dev.driftlang.bytewright.scope.ScopeManager;
+import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
 import lombok.Getter;
 import lombok.NonNull;
 
@@ -45,6 +46,9 @@ public abstract class Flow implements AutoCloseable {
 
     /**
      * Starts the flow operation. Can only be called once.
+     *
+     * @throws FlowAlreadyStartedException if this flow has already been
+     *                                     started.
      */
     protected void start() {
         requireNotStarted();
@@ -53,6 +57,13 @@ public abstract class Flow implements AutoCloseable {
     }
 
 
+    /**
+     * Closes this flow by binding its end label and closing its scope.
+     *
+     * @throws FlowNotStartedException if this flow has not been started yet.
+     * @throws ScopeAlreadyClosedException if this flow's scope is already
+     *                                     closed.
+     */
     @Override
     public void close() {
         requireStarted();
@@ -66,10 +77,14 @@ public abstract class Flow implements AutoCloseable {
 
     /**
      * Breaks this flow by generating a goto to its end label.
+     *
+     * @throws FlowNotStartedException if this flow has not been started yet.
+     * @throws ScopeAlreadyClosedException if this flow's scope is already
+     *                                     closed.
      */
     public void break_() {
-        getScope().requireNotClosed();
         requireStarted();
+        getScope().requireNotClosed();
 
         getScope().getBuilder()
                 .goto_(endLabel);
