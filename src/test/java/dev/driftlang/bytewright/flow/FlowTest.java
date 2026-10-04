@@ -14,6 +14,7 @@ import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
+import lombok.NonNull;
 import org.junit.jupiter.api.Test;
 
 import java.lang.classfile.ClassFile;
@@ -187,16 +188,17 @@ class FlowTest {
     }
 
     @Test
-    void close_withoutStart_doesNotThrow() {
+    void close_withoutStart_throws() {
         // GIVEN a flow that has never been started
         // WHEN closing it
-        // THEN no exception is thrown
-        assertThatCode(() -> buildMethod(builder -> {
+        // THEN a FlowNotStartedException is thrown
+        assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             TestFlow flow = new TestFlow(manager.scope());
 
             flow.close();
-        })).doesNotThrowAnyException();
+        }))
+                .isInstanceOf(FlowNotStartedException.class);
     }
 
     @Test
@@ -208,6 +210,7 @@ class FlowTest {
         buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             flow[0] = new TestFlow(manager.scope());
+            flow[0].start();
 
             flow[0].close();
         });
@@ -224,6 +227,7 @@ class FlowTest {
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             TestFlow flow = new TestFlow(manager.scope());
+            flow.start();
             flow.close();
 
             flow.close();
@@ -232,7 +236,8 @@ class FlowTest {
 
 
     private static final class TestFlow extends Flow {
-        private TestFlow(final ScopeManager.Scope parentScope) {
+
+        private TestFlow(@NonNull final ScopeManager.Scope parentScope) {
             super(parentScope);
         }
     }

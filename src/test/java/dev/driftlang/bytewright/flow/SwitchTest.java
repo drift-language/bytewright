@@ -247,6 +247,7 @@ class SwitchTest {
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+            switch_.start();
             switch_.close();
 
             switch_.compute();
@@ -314,6 +315,7 @@ class SwitchTest {
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+            switch_.start();
             switch_.close();
 
             switch_.bodyEntry(1);
@@ -363,6 +365,7 @@ class SwitchTest {
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+            switch_.start();
             switch_.close();
 
             switch_.break_();
@@ -377,6 +380,7 @@ class SwitchTest {
         assertThatCode(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+            switch_.start();
 
             switch_.close();
         })).doesNotThrowAnyException();
@@ -390,6 +394,7 @@ class SwitchTest {
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+            switch_.start();
             switch_.close();
 
             switch_.close();

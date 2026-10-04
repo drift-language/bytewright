@@ -55,6 +55,7 @@ public abstract class Flow implements AutoCloseable {
 
     @Override
     public void close() {
+        requireStarted();
         getScope().requireNotClosed();
 
         getScope().getBuilder()

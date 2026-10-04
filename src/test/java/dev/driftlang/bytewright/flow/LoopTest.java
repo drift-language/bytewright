@@ -141,6 +141,7 @@ class LoopTest {
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Loop loop = new Loop(manager.scope());
+            loop.start();
             loop.close();
 
             loop.start();
@@ -238,13 +239,14 @@ class LoopTest {
     void close_withoutStart_doesNotThrow() {
         // GIVEN a loop that has never been started
         // WHEN closing it
-        // THEN no exception is thrown
-        assertThatCode(() -> buildMethod(builder -> {
+        // THEN a FlowNotStartedException is thrown
+        assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Loop loop = new Loop(manager.scope());
 
             loop.close();
-        })).doesNotThrowAnyException();
+        }))
+                .isInstanceOf(FlowNotStartedException.class);
     }
 
     @Test
@@ -255,6 +257,7 @@ class LoopTest {
         assertThatThrownBy(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             Loop loop = new Loop(manager.scope());
+            loop.start();
             loop.close();
 
             loop.close();
@@ -270,6 +273,7 @@ class LoopTest {
         buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
             loop[0] = new Loop(manager.scope());
+            loop[0].start();
 
             loop[0].close();
         });
