@@ -127,6 +127,23 @@ public class Switch extends Flow {
         }
     }
 
+    /**
+     * Entry point for a default switch case body. The default label is bound.
+     * As switches must have a default case, this method cannot fail for this
+     * reason.
+     *
+     * @throws FlowNotStartedException if this flow has not been started yet.
+     * @throws ScopeAlreadyClosedException if this flow's scope is already
+     *                                     closed.
+     */
+    public void defaultEntry() {
+        requireStarted();
+        getScope().requireNotClosed();
+
+        getScope().getBuilder()
+                .labelBinding(defaultLabel);
+    }
+
 
     /**
      * @return the lower value of the switch range. If there is no registered
