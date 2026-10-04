@@ -11,9 +11,12 @@
 package dev.driftlang.bytewright.flow;
 
 
+import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
+import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
 import dev.driftlang.bytewright.flow.exception.UnexpectedSwitchKindException;
 import dev.driftlang.bytewright.flow.exception.UnregisteredSwitchCaseValueException;
 import dev.driftlang.bytewright.scope.ScopeManager;
+import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
 import lombok.NonNull;
 
 import java.lang.classfile.CodeBuilder;
@@ -66,6 +69,10 @@ public class Switch extends Flow {
      * An unexpected kind of switch — impossible in practice as an enum class is
      * used — would throw a {@link UnexpectedSwitchKindException}.
      *
+     * @throws ScopeAlreadyClosedException if this flow's scope is already
+     *                                     closed.
+     * @throws FlowAlreadyStartedException if this flow has already been
+     *                                     started.
      * @throws UnexpectedSwitchKindException if the switch kind is unexpected,
      *                                       see above.
      */
@@ -95,16 +102,20 @@ public class Switch extends Flow {
 
     /**
      * Entry point for a switch case body. The label corresponding to the
-     * provided value is retrieved if existing and bound.
+     * provided value is retrieved if existing and bound. This method does
+     * not handle the default case, use {@link #defaultEntry()} instead.
      *
      * @param value the value of the switch case.
+     * @throws FlowNotStartedException if this flow has not been started yet.
+     * @throws ScopeAlreadyClosedException if this flow's scope is already
+     *                                     closed.
      * @throws UnregisteredSwitchCaseValueException if the provided value
      *                                              doesn't correspond to a
      *                                              case.
      */
     public void bodyEntry(final int value) {
-        getScope().requireNotClosed();
         requireStarted();
+        getScope().requireNotClosed();
 
         final Label caseLabel = caseLabels.get(value);
 
