@@ -14,6 +14,6 @@ public class FlowNotStartedException extends RuntimeException {
 
     @Override
     public String getMessage() {
-        return "The loop has not started yet.";
+        return "The flow has not started yet.";
     }
 }
