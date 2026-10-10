@@ -12,7 +12,6 @@ package dev.driftlang.bytewright.flow;
 
 import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
-import dev.driftlang.bytewright.flow.exception.UnexpectedSwitchKindException;
 import dev.driftlang.bytewright.flow.exception.UnregisteredSwitchCaseValueException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
@@ -64,16 +63,11 @@ public class Switch extends Flow {
      * the appropriate {@link CodeBuilder} switch method between {@link
      * CodeBuilder#tableswitch(Label, List)} and {@link
      * CodeBuilder#lookupswitch(Label, List)}.
-     * <p>
-     * An unexpected kind of switch — impossible in practice as an enum class is
-     * used — would throw a {@link UnexpectedSwitchKindException}.
      *
      * @throws ScopeAlreadyClosedException if this flow's scope is already
      *                                     closed.
      * @throws FlowAlreadyStartedException if this flow has already been
      *                                     started.
-     * @throws UnexpectedSwitchKindException if the switch kind is unexpected,
-     *                                       see above.
      */
     public void compute() {
         getScope().requireNotClosed();
@@ -92,10 +86,9 @@ public class Switch extends Flow {
         switch (kind) {
             case TABLE -> getScope().getBuilder()
                     .tableswitch(defaultLabel, cases);
+
             case LOOKUP -> getScope().getBuilder()
                     .lookupswitch(defaultLabel, cases);
-
-            default -> throw new UnexpectedSwitchKindException();
         }
     }
 
@@ -113,8 +106,7 @@ public class Switch extends Flow {
      *                                              case.
      */
     public void bodyEntry(final int value) {
-        requireStarted();
-        getScope().requireNotClosed();
+        requireActive();
 
         final Label caseLabel = caseLabels.get(value);
 
@@ -136,8 +128,7 @@ public class Switch extends Flow {
      *                                     closed.
      */
     public void defaultEntry() {
-        requireStarted();
-        getScope().requireNotClosed();
+        requireActive();
 
         getScope().getBuilder()
                 .labelBinding(defaultLabel);
