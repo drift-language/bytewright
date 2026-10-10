@@ -63,8 +63,7 @@ public abstract class Flow implements AutoCloseable {
      *                                     closed.
      */
     public void break_() {
-        requireStarted();
-        getScope().requireNotClosed();
+        requireActive();
 
         getScope().getBuilder()
                 .goto_(endLabel);
@@ -88,6 +87,21 @@ public abstract class Flow implements AutoCloseable {
             throw new FlowAlreadyStartedException();
     }
 
+    /**
+     * Requires the flow to be started, and its scope to be not closed.
+     *
+     * @throws FlowNotStartedException if the flow operation has not been
+     *                                 started yet.
+     * @throws ScopeAlreadyClosedException if this flow's scope is already
+     *                                     closed.
+     * @see #requireStarted()
+     * @see ScopeManager.Scope#requireNotClosed()
+     */
+    protected void requireActive() {
+        requireStarted();
+        getScope().requireNotClosed();
+    }
+
 
     /**
      * Closes this flow by binding its end label and closing its scope.
@@ -98,8 +112,7 @@ public abstract class Flow implements AutoCloseable {
      */
     @Override
     public void close() {
-        requireStarted();
-        getScope().requireNotClosed();
+        requireActive();
 
         getScope().getBuilder()
                 .labelBinding(endLabel);
