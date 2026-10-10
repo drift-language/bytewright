@@ -10,18 +10,9 @@
 
 package dev.driftlang.bytewright.scope.exception;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
-
-@RequiredArgsConstructor
 public class AlreadyBoundNameException extends RuntimeException {
 
-    @NonNull private final String name;
-
-
-    @Override
-    public String getMessage() {
-        return "Name '%s' is already bound in this scope.".formatted(name);
+    public AlreadyBoundNameException(String name) {
+        super("Name '%s' is already bound in this scope.".formatted(name));
     }
 }

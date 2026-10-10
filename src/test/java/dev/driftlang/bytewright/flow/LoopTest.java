@@ -12,16 +12,28 @@ package dev.driftlang.bytewright.flow;
 
 import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
+import dev.driftlang.bytewright.flow.exception.NotInLoopBodyException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
 import org.junit.jupiter.api.Test;
 
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.CodeBuilder;
+import java.lang.classfile.CodeElement;
+import java.lang.classfile.Label;
 import java.lang.classfile.MethodModel;
+import java.lang.classfile.Opcode;
+import java.lang.classfile.instruction.BranchInstruction;
+import java.lang.classfile.instruction.LabelTarget;
+import java.lang.classfile.instruction.NopInstruction;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 import static java.lang.constant.ConstantDescs.CD_void;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,15 +71,42 @@ class LoopTest {
                 .getFirst();
     }
 
-
-    @Test
-    void constructor_withNullParentScope_throwsNullPointerException() {
-        // GIVEN a null parent scope
-        // WHEN / THEN constructing a Loop with it throws
-        assertThatThrownBy(() -> new Loop(null))
-                .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("parentScope is marked non-null but is null");
+    /**
+     * Returns the code elements (instructions and label targets) of
+     * {@code method}, in emission order.
+     */
+    private static List<CodeElement> elementsOf(MethodModel method) {
+        return method.code()
+                .orElseThrow()
+                .elementList();
     }
+
+    /**
+     * Maps each label bound in {@code elements} to the index of its
+     * {@link LabelTarget}.
+     */
+    private static Map<Label, Integer> labelPositions(List<CodeElement> elements) {
+        Map<Label, Integer> positions = new HashMap<>();
+
+        for (int i = 0; i < elements.size(); i++)
+            if (elements.get(i) instanceof LabelTarget target)
+                positions.put(target.label(), i);
+
+        return positions;
+    }
+
+    /**
+     * Returns the indices of the {@code goto} instructions in
+     * {@code elements}.
+     */
+    private static List<Integer> gotoPositions(List<CodeElement> elements) {
+        return IntStream.range(0, elements.size())
+                .filter(i -> elements.get(i) instanceof BranchInstruction branch
+                        && branch.opcode() == Opcode.GOTO)
+                .boxed()
+                .toList();
+    }
+
 
     @Test
     void constructor_createsChildScopeOfParent() {
@@ -164,15 +203,74 @@ class LoopTest {
     @Test
     void continue_afterStart_doesNotThrow() {
         // GIVEN a started loop
-        // WHEN continuing it
+        // WHEN continuing it, then completing the loop's lifecycle so the
+        // referenced continue label actually gets bound
         // THEN no exception is thrown
         assertThatCode(() -> buildMethod(builder -> {
             ScopeManager manager = new ScopeManager(builder);
+            try (Loop loop = new Loop(manager.scope())) {
+                loop.start();
+                loop.continue_();
+            }
+        })).doesNotThrowAnyException();
+    }
+
+    @Test
+    void continue_afterContinueEntry_throwsNotInLoopBodyException() {
+        // GIVEN a started loop whose continue point has been entered
+        // WHEN continuing it from within its step
+        // THEN a NotInLoopBodyException is thrown
+        assertThatThrownBy(() -> buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
             Loop loop = new Loop(manager.scope());
             loop.start();
+            loop.continueEntry();
 
             loop.continue_();
-        })).doesNotThrowAnyException();
+        })).isInstanceOf(NotInLoopBodyException.class);
+    }
+
+    @Test
+    void continueEntry_beforeStart_throwsFlowNotStartedException() {
+        // GIVEN a loop that has not been started
+        // WHEN entering its continue point
+        // THEN a FlowNotStartedException is thrown
+        assertThatThrownBy(() -> buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
+            Loop loop = new Loop(manager.scope());
+
+            loop.continueEntry();
+        })).isInstanceOf(FlowNotStartedException.class);
+    }
+
+    @Test
+    void continueEntry_afterClose_throwsScopeAlreadyClosedException() {
+        // GIVEN a started loop that has already been closed
+        // WHEN entering its continue point
+        // THEN a ScopeAlreadyClosedException is thrown
+        assertThatThrownBy(() -> buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
+            Loop loop = new Loop(manager.scope());
+            loop.start();
+            loop.close();
+
+            loop.continueEntry();
+        })).isInstanceOf(ScopeAlreadyClosedException.class);
+    }
+
+    @Test
+    void continueEntry_calledTwice_throwsIllegalArgumentException() {
+        // GIVEN a started loop whose continue point has been entered
+        // WHEN entering it a second time
+        // THEN the classfile API rejects the second label binding eagerly
+        assertThatThrownBy(() -> buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
+            Loop loop = new Loop(manager.scope());
+            loop.start();
+            loop.continueEntry();
+
+            loop.continueEntry();
+        })).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -236,7 +334,7 @@ class LoopTest {
     }
 
     @Test
-    void close_withoutStart_doesNotThrow() {
+    void close_withoutStart_throwsFlowNotStartedException() {
         // GIVEN a loop that has never been started
         // WHEN closing it
         // THEN a FlowNotStartedException is thrown
@@ -293,6 +391,96 @@ class LoopTest {
                 loop.start();
                 loop.continue_();
                 loop.break_();
+            }
+        })).doesNotThrowAnyException();
+    }
+
+    @Test
+    void close_withoutContinueEntry_bindsContinueLabel() {
+        // GIVEN a while-like loop that continues but never enters its
+        // continue point
+        // WHEN closing it
+        // THEN the continue label is bound by close() and the method builds
+        assertThatCode(() -> buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
+
+            try (Loop loop = new Loop(manager.scope())) {
+                loop.start();
+                loop.continue_();
+            }
+        })).doesNotThrowAnyException();
+    }
+
+    @Test
+    void close_emitsBackEdgeToLoopHead() {
+        // GIVEN / WHEN
+        MethodModel method = buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
+
+            try (Loop loop = new Loop(manager.scope())) {
+                loop.start();
+                builder.nop();
+            }
+        });
+
+        // THEN exactly one goto is emitted, and it jumps backwards
+        List<CodeElement> elements = elementsOf(method);
+        Map<Label, Integer> labels = labelPositions(elements);
+        List<Integer> gotos = gotoPositions(elements);
+
+        assertThat(gotos).hasSize(1);
+
+        int gotoIndex = gotos.getFirst();
+        Label target = ((BranchInstruction) elements.get(gotoIndex)).target();
+
+        assertThat(labels.get(target)).isLessThan(gotoIndex);
+    }
+
+    @Test
+    void continue_inSteppedLoop_jumpsToStep() {
+        // GIVEN / WHEN a loop whose body continues, and whose step is marked
+        // by a single nop
+        MethodModel method = buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
+
+            try (Loop loop = new Loop(manager.scope())) {
+                loop.start();
+                loop.continue_();
+
+                loop.continueEntry();
+                builder.nop();
+            }
+        });
+
+        // THEN the first goto (from continue_) jumps forwards, to the step
+        List<CodeElement> elements = elementsOf(method);
+        Map<Label, Integer> labels = labelPositions(elements);
+
+        int continueGoto = gotoPositions(elements).getFirst();
+        Label target = ((BranchInstruction) elements.get(continueGoto)).target();
+        int targetIndex = Objects.requireNonNull(labels.get(target));
+
+        assertSoftly(softly -> {
+            softly.assertThat(targetIndex).isGreaterThan(continueGoto);
+            softly.assertThat(elements.get(targetIndex + 1))
+                    .isInstanceOf(NopInstruction.class);
+        });
+    }
+
+    @Test
+    void fullLifecycle_steppedLoop_doesNotThrow() {
+        // GIVEN / WHEN / THEN a stepped loop (body, continue point, step)
+        // taken through its whole lifecycle builds without throwing
+        assertThatCode(() -> buildMethod(builder -> {
+            ScopeManager manager = new ScopeManager(builder);
+
+            try (Loop loop = new Loop(manager.scope())) {
+                loop.start();
+                loop.continue_();
+                loop.break_();
+
+                loop.continueEntry();
+                builder.nop();
             }
         })).doesNotThrowAnyException();
     }

@@ -10,7 +10,6 @@
 
 package dev.driftlang.bytewright.core;
 
-import lombok.NonNull;
 
 import java.lang.classfile.CodeBuilder;
 
@@ -42,5 +41,5 @@ public interface Value {
      *
      * @param builder the {@link CodeBuilder} to push onto.
      */
-    void emit(@NonNull final CodeBuilder builder);
+    void emit(final CodeBuilder builder);
 }

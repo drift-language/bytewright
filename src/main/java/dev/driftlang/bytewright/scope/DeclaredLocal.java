@@ -11,7 +11,6 @@
 package dev.driftlang.bytewright.scope;
 
 import dev.driftlang.bytewright.core.JvmType;
-import lombok.NonNull;
 
 import java.lang.classfile.Label;
 
@@ -25,8 +24,8 @@ import java.lang.classfile.Label;
  * @param label
  */
 public record DeclaredLocal(
-        @NonNull String name,
+        String name,
         int slot,
-        @NonNull JvmType type,
+        JvmType type,
         Label label
 ) { }

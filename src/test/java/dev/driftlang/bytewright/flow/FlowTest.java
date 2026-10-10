@@ -14,7 +14,6 @@ import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
-import lombok.NonNull;
 import org.junit.jupiter.api.Test;
 
 import java.lang.classfile.ClassFile;
@@ -62,15 +61,6 @@ class FlowTest {
                 .getFirst();
     }
 
-
-    @Test
-    void constructor_withNullParentScope_throwsNullPointerException() {
-        // GIVEN a null parent scope
-        // WHEN / THEN constructing a Flow with it throws
-        assertThatThrownBy(() -> new TestFlow(null))
-                .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("parentScope is marked non-null but is null");
-    }
 
     @Test
     void constructor_createsChildScopeOfParent() {
@@ -237,7 +227,7 @@ class FlowTest {
 
     private static final class TestFlow extends Flow {
 
-        private TestFlow(@NonNull final ScopeManager.Scope parentScope) {
+        private TestFlow(final ScopeManager.Scope parentScope) {
             super(parentScope);
         }
     }

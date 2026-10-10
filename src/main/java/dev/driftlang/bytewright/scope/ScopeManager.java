@@ -15,8 +15,8 @@ import dev.driftlang.bytewright.scope.exception.AlreadyBoundNameException;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
 import dev.driftlang.bytewright.scope.exception.UnexpectedScopeByManagerException;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.Label;
@@ -38,7 +38,7 @@ import static lombok.AccessLevel.PRIVATE;
 public class ScopeManager {
 
     @Getter
-    @NonNull private final CodeBuilder builder;
+    private final CodeBuilder builder;
 
     /** The next available variable slot index in this scope manager. */
     private int nextSlotIndex = 0;
@@ -66,7 +66,7 @@ public class ScopeManager {
      * @param parent the parent scope.
      * @return a new scope instance that is a sub-scope of the specified parent.
      */
-    public Scope scope(@NonNull final Scope parent) {
+    public Scope scope(final Scope parent) {
         if (parent.getManager() != this)
             throw new UnexpectedScopeByManagerException();
 
@@ -94,13 +94,13 @@ public class ScopeManager {
          * The {@link ScopeManager} that created this {@link Scope}.
          */
         @Getter
-        @NonNull private final ScopeManager manager;
+        private final ScopeManager manager;
 
         /**
          * The parent scope if any, or {@code null} otherwise.
          */
         @Getter
-        private final Scope parent;
+        private final @Nullable Scope parent;
 
         /**
          * The list of local variable declarations in this scope, ordered by
@@ -126,7 +126,7 @@ public class ScopeManager {
          * @param name the name of the local variable to search for.
          * @return an option containing the declared local variable, if any.
          */
-        public Optional<DeclaredLocal> resolve(@NonNull final String name) {
+        public Optional<DeclaredLocal> resolve(final String name) {
             Optional<DeclaredLocal> fromCurrentScope = locals.stream()
                     .filter(local -> local.name().equals(name))
                     .findFirst();
@@ -134,7 +134,7 @@ public class ScopeManager {
             if (fromCurrentScope.isPresent())
                 return fromCurrentScope;
 
-            if (hasParent())
+            if (parent != null)
                 return parent.resolve(name);
 
             return Optional.empty();
@@ -146,7 +146,7 @@ public class ScopeManager {
          * @param name the name of the variable to check for binding.
          * @return {@code true} if the name is bound, {@code false} otherwise.
          */
-        public boolean isNameBoundInCurrentScope(@NonNull final String name) {
+        public boolean isNameBoundInCurrentScope(final String name) {
             return locals.stream()
                     .anyMatch(local -> local.name().equals(name));
         }
@@ -159,7 +159,7 @@ public class ScopeManager {
          * @param name the name of the local variable.
          * @param type the type of the local variable.
          */
-        public Local declare(@NonNull final String name, @NonNull final JvmType type) {
+        public Local declare(final String name, final JvmType type) {
             requireNotClosed();
 
             if (isNameBoundInCurrentScope(name))

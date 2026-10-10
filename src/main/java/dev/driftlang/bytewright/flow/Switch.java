@@ -10,20 +10,19 @@
 
 package dev.driftlang.bytewright.flow;
 
-
 import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
 import dev.driftlang.bytewright.flow.exception.UnexpectedSwitchKindException;
 import dev.driftlang.bytewright.flow.exception.UnregisteredSwitchCaseValueException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
-import lombok.NonNull;
 
 import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.Label;
 import java.lang.classfile.instruction.SwitchCase;
 import java.util.List;
 import java.util.Map;
+
 
 /**
  * Represents a control flow switch. JVM has limitations for switches: it can
@@ -33,14 +32,14 @@ import java.util.Map;
  */
 public class Switch extends Flow {
 
-    @NonNull private final Map<Integer, Label> caseLabels;
-    @NonNull private final Label defaultLabel;
+    private final Map<Integer, Label> caseLabels;
+    private final Label defaultLabel;
 
 
     public Switch(
-            @NonNull final ScopeManager.Scope parentScope,
-            @NonNull final Map<Integer, Label> caseLabels,
-            @NonNull final Label defaultLabel) {
+            final ScopeManager.Scope parentScope,
+            final Map<Integer, Label> caseLabels,
+            final Label defaultLabel) {
 
         super(parentScope);
         this.caseLabels = caseLabels;

@@ -12,8 +12,7 @@ package dev.driftlang.bytewright.scope.exception;
 
 public class ScopeAlreadyClosedException extends RuntimeException {
 
-    @Override
-    public String getMessage() {
-        return "This scope is already closed and cannot be used anymore.";
+    public ScopeAlreadyClosedException() {
+        super("This scope is already closed and cannot be used anymore.");
     }
 }

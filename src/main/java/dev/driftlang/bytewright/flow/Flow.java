@@ -15,7 +15,6 @@ import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
 import lombok.Getter;
-import lombok.NonNull;
 
 import java.lang.classfile.Label;
 
@@ -30,15 +29,15 @@ import java.lang.classfile.Label;
 public abstract class Flow implements AutoCloseable {
 
     @Getter
-    @NonNull protected final ScopeManager.Scope scope;
+    protected final ScopeManager.Scope scope;
 
-    @NonNull protected final Label endLabel;
+    protected final Label endLabel;
 
     @Getter
     private boolean started = false;
 
 
-    protected Flow(@NonNull final ScopeManager.Scope parentScope) {
+    protected Flow(final ScopeManager.Scope parentScope) {
         this.scope = parentScope.scope();
         this.endLabel = getScope().getBuilder().newLabel();
     }

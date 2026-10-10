@@ -10,18 +10,9 @@
 
 package dev.driftlang.bytewright.scope.exception;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
-
-@RequiredArgsConstructor
 public class UnexpectedScopeException extends RuntimeException {
 
-    @NonNull private final String reason;
-
-
-    @Override
-    public String getMessage() {
-        return "Unexpected Scope: %s".formatted(reason);
+    public UnexpectedScopeException(String reason) {
+        super("Unexpected Scope: %s".formatted(reason));
     }
 }

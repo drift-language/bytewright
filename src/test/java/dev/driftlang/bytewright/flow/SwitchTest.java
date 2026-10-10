@@ -124,35 +124,6 @@ class SwitchTest {
     }
 
     @Test
-    void constructor_withNullParentScope_throwsNullPointerException() {
-        // GIVEN a null parent scope
-        // WHEN / THEN constructing a Switch with it throws
-        assertThatThrownBy(() -> new Switch(null, null, null))
-                .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("parentScope is marked non-null but is null");
-    }
-
-    @Test
-    void constructor_withNullCaseLabels_throwsNullPointerException() {
-        // GIVEN / WHEN / THEN
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            new Switch(manager.scope(), null, null);
-        })).isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("caseLabels is marked non-null but is null");
-    }
-
-    @Test
-    void constructor_withNullDefaultLabel_throwsNullPointerException() {
-        // GIVEN / WHEN / THEN
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            new Switch(manager.scope(), Map.of(), null);
-        })).isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("defaultLabel is marked non-null but is null");
-    }
-
-    @Test
     void constructor_createsChildScopeOfParent() {
         // GIVEN
         final ScopeManager.Scope[] parent = new ScopeManager.Scope[1];

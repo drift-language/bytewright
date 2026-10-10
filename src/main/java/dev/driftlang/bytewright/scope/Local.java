@@ -12,7 +12,6 @@ package dev.driftlang.bytewright.scope;
 
 import dev.driftlang.bytewright.core.JvmType;
 import dev.driftlang.bytewright.core.Value;
-import lombok.NonNull;
 
 import java.lang.classfile.CodeBuilder;
 
@@ -26,7 +25,7 @@ import java.lang.classfile.CodeBuilder;
  */
 public record Local(
         int slot,
-        @NonNull JvmType type
+        JvmType type
 ) {
 
     /**
@@ -34,7 +33,7 @@ public record Local(
      *
      * @param cb the code builder to store the local variable in.
      */
-    public void store(@NonNull final CodeBuilder cb) {
+    public void store(final CodeBuilder cb) {
         cb.storeLocal(type.kind(), slot);
     }
 
@@ -54,7 +53,7 @@ public record Local(
             }
 
             @Override
-            public void emit(@NonNull final CodeBuilder cb) {
+            public void emit(final CodeBuilder cb) {
                 cb.loadLocal(type.kind(), slot);
             }
         };

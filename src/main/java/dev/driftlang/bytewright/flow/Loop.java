@@ -14,7 +14,6 @@ import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
-import lombok.NonNull;
 
 import java.lang.classfile.Label;
 
@@ -28,10 +27,11 @@ import java.lang.classfile.Label;
  */
 public class Loop extends Flow {
 
-    @NonNull private final Label bodyLabel;
+    private final Label bodyLabel;
 
 
-    public Loop(@NonNull final ScopeManager.Scope parentScope) {
+
+    public Loop(final ScopeManager.Scope parentScope) {
         super(parentScope);
         this.bodyLabel = getScope().getBuilder().newLabel();
     }

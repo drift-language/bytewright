@@ -10,7 +10,6 @@
 
 package dev.driftlang.bytewright.core;
 
-import lombok.NonNull;
 
 import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
@@ -33,7 +32,7 @@ import static java.lang.constant.ConstantDescs.*;
  *
  * @author Jonathan (GitHub: belicfr)
  */
-public record JvmType(@NonNull ClassDesc descriptor) {
+public record JvmType(ClassDesc descriptor) {
 
     public static final JvmType BYTE    = new JvmType(CD_byte);
     public static final JvmType SHORT   = new JvmType(CD_short);
@@ -77,7 +76,7 @@ public record JvmType(@NonNull ClassDesc descriptor) {
      * @param clazz the class instance from which to get the ClassDesc.
      * @return an Optional containing the {@link JvmType} if it exists.
      */
-    public static Optional<JvmType> of(@NonNull final Class<?> clazz) {
+    public static Optional<JvmType> of(final Class<?> clazz) {
         return clazz.describeConstable()
                 .map(JvmType::new);
     }
@@ -89,7 +88,7 @@ public record JvmType(@NonNull ClassDesc descriptor) {
      *                   ClassDesc.
      * @return an Optional containing the {@link JvmType} if it exists;
      */
-    public static JvmType of(@NonNull final ClassDesc descriptor) {
+    public static JvmType of(final ClassDesc descriptor) {
         return new JvmType(descriptor);
     }
 
@@ -100,7 +99,7 @@ public record JvmType(@NonNull ClassDesc descriptor) {
      * @return the wrapped {@link JvmType} representing an array of the given
      *         type.
      */
-    public static JvmType arrayOf(@NonNull final JvmType component) {
+    public static JvmType arrayOf(final JvmType component) {
         return new JvmType(component.descriptor().arrayType());
     }
 
@@ -113,7 +112,7 @@ public record JvmType(@NonNull ClassDesc descriptor) {
      * @return the wrapped {@link JvmType} representing an array of the given
      *         type and dimension.
      */
-    public static JvmType arrayOf(@NonNull final JvmType component, final int dimensions) {
+    public static JvmType arrayOf(final JvmType component, final int dimensions) {
         return new JvmType(component.descriptor().arrayType(dimensions));
     }
 }
