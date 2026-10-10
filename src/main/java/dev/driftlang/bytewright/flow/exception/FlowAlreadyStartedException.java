@@ -12,8 +12,7 @@ package dev.driftlang.bytewright.flow.exception;
 
 public class FlowAlreadyStartedException extends RuntimeException {
 
-    @Override
-    public String getMessage() {
-        return "The flow operation is already started.";
+    public FlowAlreadyStartedException() {
+        super("The flow operation is already started.");
     }
 }

@@ -12,8 +12,7 @@ package dev.driftlang.bytewright.flow.exception;
 
 public class FlowNotStartedException extends RuntimeException {
 
-    @Override
-    public String getMessage() {
-        return "The flow has not started yet.";
+    public FlowNotStartedException() {
+        super("The flow has not started yet.");
     }
 }
