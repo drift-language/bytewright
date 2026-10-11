@@ -98,10 +98,10 @@ public final class Conditions {
 
             left.jumpIfTrue(builder, target);
             // NOTE: left == true -> the whole expression is true -> skip the
-            //  right's evaluation.
+            //  right's evaluation by jumping straight to target.
 
             right.jumpIfTrue(builder, target);
-            // NOTE: if this line is reached, left is true.
+            // NOTE: if this line is reached, left is false.
         };
     }
 }
