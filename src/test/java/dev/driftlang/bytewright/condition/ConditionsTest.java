@@ -10,6 +10,7 @@
 
 package dev.driftlang.bytewright.condition;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -32,6 +33,7 @@ import static java.lang.constant.ConstantDescs.CD_boolean;
 import static java.lang.constant.ConstantDescs.CD_Object;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 /**
  * The operators are checked by running them: each test generates a real
@@ -114,240 +116,262 @@ class ConditionsTest {
     }
 
 
-    // ---------------------------------------------------------------- leaves
+    @Nested
+    class ParameterLeaf {
 
-    @ParameterizedTest(name = "a={0}, when={1}")
-    @CsvSource({
-            "false, false",
-            "false, true",
-            "true,  false",
-            "true,  true",
-    })
-    void parameterLeaf_jumpsWhenResultEqualsWhen(final boolean a, final boolean when) throws Throwable {
-        // GIVEN the test leaf condition on parameter a
-        // WHEN it is emitted and run
-        boolean jumped = jumps(A, when, a, false);
+        @ParameterizedTest(name = "a={0}, when={1}")
+        @CsvSource({
+                "false, false",
+                "false, true",
+                "true,  false",
+                "true,  true",
+        })
+        void jumpsWhenResultEqualsWhen(final boolean a, final boolean when) throws Throwable {
+            // GIVEN the test leaf condition on parameter a
+            // WHEN it is emitted and run
+            boolean jumped = jumps(A, when, a, false);
 
-        // THEN it jumps exactly when a equals when (sanity check of the harness)
-        assertThat(jumped).isEqualTo(a == when);
+            // THEN it jumps exactly when a equals when (sanity check of the harness)
+            assertThat(jumped).isEqualTo(a == when);
+        }
     }
 
 
-    // ------------------------------------------------------------------- not
+    @Nested
+    class Not {
 
-    @ParameterizedTest(name = "a={0}, when={1}")
-    @CsvSource({
-            "false, false",
-            "false, true",
-            "true,  false",
-            "true,  true",
-    })
-    void not_jumpsWhenNegatedResultEqualsWhen(final boolean a, final boolean when) throws Throwable {
-        // GIVEN
-        Condition condition = not(A);
+        @ParameterizedTest(name = "a={0}, when={1}")
+        @CsvSource({
+                "false, false",
+                "false, true",
+                "true,  false",
+                "true,  true",
+        })
+        void jumpsWhenNegatedResultEqualsWhen(final boolean a, final boolean when) throws Throwable {
+            // GIVEN
+            Condition condition = not(A);
 
-        // WHEN
-        boolean jumped = jumps(condition, when, a, false);
+            // WHEN
+            boolean jumped = jumps(condition, when, a, false);
 
-        // THEN
-        assertThat(jumped).isEqualTo(!a == when);
-    }
+            // THEN
+            assertThat(jumped).isEqualTo(!a == when);
+        }
 
-    @ParameterizedTest(name = "a={0}, when={1}")
-    @CsvSource({
-            "false, false",
-            "false, true",
-            "true,  false",
-            "true,  true",
-    })
-    void not_twice_isIdentity(final boolean a, final boolean when) throws Throwable {
-        // GIVEN
-        Condition condition = not(not(A));
+        @ParameterizedTest(name = "a={0}, when={1}")
+        @CsvSource({
+                "false, false",
+                "false, true",
+                "true,  false",
+                "true,  true",
+        })
+        void appliedTwice_isIdentity(final boolean a, final boolean when) throws Throwable {
+            // GIVEN
+            Condition condition = not(not(A));
 
-        // WHEN
-        boolean jumped = jumps(condition, when, a, false);
+            // WHEN
+            boolean jumped = jumps(condition, when, a, false);
 
-        // THEN
-        assertThat(jumped).isEqualTo(a == when);
-    }
-
-
-    // ------------------------------------------------------------------- and
-
-    @ParameterizedTest(name = "a={0}, b={1}, when={2}")
-    @CsvSource({
-            "false, false, false",
-            "false, true,  false",
-            "true,  false, false",
-            "true,  true,  false",
-            "false, false, true",
-            "false, true,  true",
-            "true,  false, true",
-            "true,  true,  true",
-    })
-    void and_jumpsWhenConjunctionEqualsWhen(final boolean a, final boolean b, final boolean when) throws Throwable {
-        // GIVEN
-        Condition condition = and(A, B);
-
-        // WHEN
-        boolean jumped = jumps(condition, when, a, b);
-
-        // THEN
-        assertThat(jumped).isEqualTo((a && b) == when);
-    }
-
-    @ParameterizedTest(name = "when={0}")
-    @CsvSource({"false", "true"})
-    void and_withFalseLeft_doesNotEvaluateRight(final boolean when) throws Throwable {
-        // GIVEN a false left operand and a right operand that throws if run
-        Condition condition = and(A, EXPLODING);
-
-        // WHEN
-        boolean jumped = jumps(condition, when, false, false);
-
-        // THEN right was skipped, and the result is false
-        assertThat(jumped).isEqualTo(!when);
-    }
-
-    @ParameterizedTest(name = "when={0}")
-    @CsvSource({"false", "true"})
-    void and_withTrueLeft_evaluatesRight(final boolean when) {
-        // GIVEN a true left operand and a right operand that throws if run
-        // WHEN / THEN right is evaluated (control for the short-circuit test)
-        assertThatThrownBy(() -> jumps(and(A, EXPLODING), when, true, false))
-                .isInstanceOf(ArithmeticException.class);
+            // THEN
+            assertThat(jumped).isEqualTo(a == when);
+        }
     }
 
 
-    // -------------------------------------------------------------------- or
+    @Nested
+    class And {
 
-    @ParameterizedTest(name = "a={0}, b={1}, when={2}")
-    @CsvSource({
-            "false, false, false",
-            "false, true,  false",
-            "true,  false, false",
-            "true,  true,  false",
-            "false, false, true",
-            "false, true,  true",
-            "true,  false, true",
-            "true,  true,  true",
-    })
-    void or_jumpsWhenDisjunctionEqualsWhen(final boolean a, final boolean b, final boolean when) throws Throwable {
-        // GIVEN
-        Condition condition = or(A, B);
+        @ParameterizedTest(name = "a={0}, b={1}, when={2}")
+        @CsvSource({
+                "false, false, false",
+                "false, true,  false",
+                "true,  false, false",
+                "true,  true,  false",
+                "false, false, true",
+                "false, true,  true",
+                "true,  false, true",
+                "true,  true,  true",
+        })
+        void jumpsWhenConjunctionEqualsWhen(final boolean a, final boolean b, final boolean when) throws Throwable {
+            // GIVEN
+            Condition condition = and(A, B);
 
-        // WHEN
-        boolean jumped = jumps(condition, when, a, b);
+            // WHEN
+            boolean jumped = jumps(condition, when, a, b);
 
-        // THEN
-        assertThat(jumped).isEqualTo((a || b) == when);
+            // THEN
+            assertThat(jumped).isEqualTo((a && b) == when);
+        }
+
+        @ParameterizedTest(name = "when={0}")
+        @CsvSource({"false", "true"})
+        void withFalseLeft_doesNotEvaluateRight(final boolean when) throws Throwable {
+            // GIVEN a false left operand and a right operand that throws if run
+            Condition condition = and(A, EXPLODING);
+
+            // WHEN
+            boolean jumped = jumps(condition, when, false, false);
+
+            // THEN right was skipped, and the result is false
+            assertThat(jumped).isEqualTo(!when);
+        }
+
+        @ParameterizedTest(name = "when={0}")
+        @CsvSource({"false", "true"})
+        void withTrueLeft_evaluatesRight(final boolean when) {
+            // GIVEN a true left operand and a right operand that throws if run
+            // WHEN / THEN right is evaluated (control for the short-circuit test)
+            assertThatThrownBy(() -> jumps(and(A, EXPLODING), when, true, false))
+                    .isInstanceOf(ArithmeticException.class);
+        }
     }
 
-    @ParameterizedTest(name = "when={0}")
-    @CsvSource({"false", "true"})
-    void or_withTrueLeft_doesNotEvaluateRight(final boolean when) throws Throwable {
-        // GIVEN a true left operand and a right operand that throws if run
-        Condition condition = or(A, EXPLODING);
 
-        // WHEN
-        boolean jumped = jumps(condition, when, true, false);
+    @Nested
+    class Or {
 
-        // THEN right was skipped, and the result is true
-        assertThat(jumped).isEqualTo(when);
+        @ParameterizedTest(name = "a={0}, b={1}, when={2}")
+        @CsvSource({
+                "false, false, false",
+                "false, true,  false",
+                "true,  false, false",
+                "true,  true,  false",
+                "false, false, true",
+                "false, true,  true",
+                "true,  false, true",
+                "true,  true,  true",
+        })
+        void jumpsWhenDisjunctionEqualsWhen(final boolean a, final boolean b, final boolean when) throws Throwable {
+            // GIVEN
+            Condition condition = or(A, B);
+
+            // WHEN
+            boolean jumped = jumps(condition, when, a, b);
+
+            // THEN
+            assertThat(jumped).isEqualTo((a || b) == when);
+        }
+
+        @ParameterizedTest(name = "when={0}")
+        @CsvSource({"false", "true"})
+        void withTrueLeft_doesNotEvaluateRight(final boolean when) throws Throwable {
+            // GIVEN a true left operand and a right operand that throws if run
+            Condition condition = or(A, EXPLODING);
+
+            // WHEN
+            boolean jumped = jumps(condition, when, true, false);
+
+            // THEN right was skipped, and the result is true
+            assertThat(jumped).isEqualTo(when);
+        }
+
+        @ParameterizedTest(name = "when={0}")
+        @CsvSource({"false", "true"})
+        void withFalseLeft_evaluatesRight(final boolean when) {
+            // GIVEN a false left operand and a right operand that throws if run
+            // WHEN / THEN right is evaluated (control for the short-circuit test)
+            assertThatThrownBy(() -> jumps(or(A, EXPLODING), when, false, false))
+                    .isInstanceOf(ArithmeticException.class);
+        }
     }
 
-    @ParameterizedTest(name = "when={0}")
-    @CsvSource({"false", "true"})
-    void or_withFalseLeft_evaluatesRight(final boolean when) {
-        // GIVEN a false left operand and a right operand that throws if run
-        // WHEN / THEN right is evaluated (control for the short-circuit test)
-        assertThatThrownBy(() -> jumps(or(A, EXPLODING), when, false, false))
-                .isInstanceOf(ArithmeticException.class);
+
+    @Nested
+    class IsTrue {
     }
 
 
-    // ----------------------------------------------------------- composition
-
-    @ParameterizedTest(name = "a={0}, b={1}, when={2}")
-    @CsvSource({
-            "false, false, false",
-            "false, true,  false",
-            "true,  false, false",
-            "true,  true,  false",
-            "false, false, true",
-            "false, true,  true",
-            "true,  false, true",
-            "true,  true,  true",
-    })
-    void nested_xorExpression_jumpsWhenResultEqualsWhen(final boolean a, final boolean b, final boolean when) throws Throwable {
-        // GIVEN (a || b) && !(a && b), i.e. a XOR b
-        Condition condition = and(or(A, B), not(and(A, B)));
-
-        // WHEN
-        boolean jumped = jumps(condition, when, a, b);
-
-        // THEN
-        assertThat(jumped).isEqualTo((a ^ b) == when);
+    @Nested
+    class IsNull {
     }
 
-    @ParameterizedTest(name = "a={0}, b={1}")
-    @CsvSource({
-            "false, false",
-            "false, true",
-            "true,  false",
-            "true,  true",
-    })
-    void sameCondition_emittedTwice_usesFreshLabels(final boolean a, final boolean b) throws Throwable {
-        // GIVEN one and(...) instance, emitted twice in the same method:
-        // jumpIfTrue, then jumpIfFalse on its fall-through path. Each
-        // emission needs its own skip label, or the second binding fails.
-        Condition condition = and(A, B);
 
-        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder
-                .withSuperclass(CD_Object)
-                .withMethodBody(
-                        "test",
-                        MethodTypeDesc.of(CD_boolean, CD_boolean, CD_boolean),
-                        ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
-                        codeBuilder -> {
-                            Label isTrue = codeBuilder.newLabel();
-                            Label isFalse = codeBuilder.newLabel();
+    @Nested
+    class Composition {
 
-                            condition.jumpIfTrue(codeBuilder, isTrue);
-                            condition.jumpIfFalse(codeBuilder, isFalse);
+        @ParameterizedTest(name = "a={0}, b={1}, when={2}")
+        @CsvSource({
+                "false, false, false",
+                "false, true,  false",
+                "true,  false, false",
+                "true,  true,  false",
+                "false, false, true",
+                "false, true,  true",
+                "true,  false, true",
+                "true,  true,  true",
+        })
+        void xorExpression_jumpsWhenResultEqualsWhen(final boolean a, final boolean b, final boolean when) throws Throwable {
+            // GIVEN (a || b) && !(a && b), i.e. a XOR b
+            Condition condition = and(or(A, B), not(and(A, B)));
 
-                            codeBuilder.iconst_0()   // unreachable: one of the two jumps is always taken
-                                    .ireturn()
-                                    .labelBinding(isTrue)
-                                    .iconst_1()
-                                    .ireturn()
-                                    .labelBinding(isFalse)
-                                    .iconst_0()
-                                    .ireturn();
-                        }));
+            // WHEN
+            boolean jumped = jumps(condition, when, a, b);
 
-        MethodHandles.Lookup lookup = MethodHandles.lookup().defineHiddenClass(bytes, true);
-        MethodHandle test = lookup.findStatic(lookup.lookupClass(), "test", TEST_TYPE);
+            // THEN
+            assertThat(jumped).isEqualTo((a ^ b) == when);
+        }
 
-        // WHEN
-        boolean result = (boolean) test.invokeExact(a, b);
+        @ParameterizedTest(name = "a={0}, b={1}")
+        @CsvSource({
+                "false, false",
+                "false, true",
+                "true,  false",
+                "true,  true",
+        })
+        void sameConditionEmittedTwice_usesFreshLabels(final boolean a, final boolean b) throws Throwable {
+            // GIVEN one and(...) instance, emitted twice in the same method:
+            // jumpIfTrue, then jumpIfFalse on its fall-through path. Each
+            // emission needs its own skip label, or the second binding fails.
+            Condition condition = and(A, B);
 
-        // THEN
-        assertThat(result).isEqualTo(a && b);
-    }
+            byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder
+                    .withSuperclass(CD_Object)
+                    .withMethodBody(
+                            "test",
+                            MethodTypeDesc.of(CD_boolean, CD_boolean, CD_boolean),
+                            ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
+                            codeBuilder -> {
+                                Label isTrue = codeBuilder.newLabel();
+                                Label isFalse = codeBuilder.newLabel();
 
-    @Test
-    void building_emitsNothing() {
-        // GIVEN leaves that record every time they are asked to emit
-        List<String> emitted = new ArrayList<>();
-        Condition left = (builder, target, when) -> emitted.add("left");
-        Condition right = (builder, target, when) -> emitted.add("right");
+                                condition.jumpIfTrue(codeBuilder, isTrue);
+                                condition.jumpIfFalse(codeBuilder, isFalse);
 
-        // WHEN building a nested condition without calling jump
-        Condition condition = or(and(left, not(right)), not(left));
+                                codeBuilder.iconst_0()   // unreachable: one of the two jumps is always taken
+                                        .ireturn()
+                                        .labelBinding(isTrue)
+                                        .iconst_1()
+                                        .ireturn()
+                                        .labelBinding(isFalse)
+                                        .iconst_0()
+                                        .ireturn();
+                            }));
 
-        // THEN nothing has been emitted yet
-        assertThat(condition).isNotNull();
-        assertThat(emitted).isEmpty();
+            MethodHandles.Lookup lookup = MethodHandles.lookup().defineHiddenClass(bytes, true);
+            MethodHandle test = lookup.findStatic(lookup.lookupClass(), "test", TEST_TYPE);
+
+            // WHEN
+            boolean result = (boolean) test.invokeExact(a, b);
+
+            // THEN
+            assertThat(result).isEqualTo(a && b);
+        }
+
+        @Test
+        void building_emitsNothing() {
+            // GIVEN leaves that record every time they are asked to emit
+            List<String> emitted = new ArrayList<>();
+            Condition left = (builder, target, when) -> emitted.add("left");
+            Condition right = (builder, target, when) -> emitted.add("right");
+
+            // WHEN building a nested condition without calling jump
+            Condition condition = or(and(left, not(right)), not(left));
+
+            // THEN nothing has been emitted yet
+            assertSoftly(softly -> {
+                softly.assertThat(condition).isNotNull();
+                softly.assertThat(emitted).isEmpty();
+            });
+        }
     }
 }

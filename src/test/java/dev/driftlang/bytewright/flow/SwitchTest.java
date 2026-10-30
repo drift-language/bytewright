@@ -15,6 +15,7 @@ import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
 import dev.driftlang.bytewright.flow.exception.UnregisteredSwitchCaseValueException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.lang.classfile.ClassFile;
@@ -33,7 +34,7 @@ import static java.lang.constant.ConstantDescs.CD_void;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 /**
  * {@link Switch} can only be exercised against a real {@link CodeBuilder}
@@ -46,11 +47,12 @@ class SwitchTest {
 
     private static final ClassDesc HOST = ClassDesc.of("dev.driftlang.bytewright.flow.GeneratedTestHost");
 
+
     /**
      * Builds a throwaway static {@code test()} method whose body is produced
      * by {@code body}, then returns the resulting method model for inspection.
      */
-    private static MethodModel buildMethod(Consumer<CodeBuilder> body) {
+    private static MethodModel buildMethod(final Consumer<CodeBuilder> body) {
         byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder.withMethodBody(
                 "test",
                 MethodTypeDesc.of(CD_void),
@@ -65,7 +67,6 @@ class SwitchTest {
                 .methods()
                 .getFirst();
     }
-
 
     /**
      * Builds a {@link Switch} for the given case values, drives it through its
@@ -92,333 +93,389 @@ class SwitchTest {
         return switch_;
     }
 
-    private static boolean emitsTableSwitch(MethodModel method) {
+    /**
+     * Returns whether {@code method} contains a {@code tableswitch}
+     * instruction.
+     */
+    private static boolean emitsTableSwitch(final MethodModel method) {
         return method.code().orElseThrow()
                 .elementStream()
                 .anyMatch(TableSwitchInstruction.class::isInstance);
     }
 
-    private static boolean emitsLookupSwitch(MethodModel method) {
+    /**
+     * Returns whether {@code method} contains a {@code lookupswitch}
+     * instruction.
+     */
+    private static boolean emitsLookupSwitch(final MethodModel method) {
         return method.code().orElseThrow()
                 .elementStream()
                 .anyMatch(LookupSwitchInstruction.class::isInstance);
     }
 
 
-    @Test
-    void select_denseCaseValues_returnsTable() {
-        // GIVEN / WHEN / THEN case values 1, 2, 3 are dense enough for a table
-        assertThat(Switch.Kind.select(1, 3, 3)).isEqualTo(Switch.Kind.TABLE);
+    @Nested
+    class Select {
+
+        @Test
+        void withDenseCaseValues_returnsTable() {
+            // GIVEN / WHEN / THEN case values 1, 2, 3 are dense enough for a table
+            assertThat(Switch.Kind.select(1, 3, 3)).isEqualTo(Switch.Kind.TABLE);
+        }
+
+        @Test
+        void withSparseCaseValues_returnsLookup() {
+            // GIVEN / WHEN / THEN case values 1 and 1000 are far too sparse for a table
+            assertThat(Switch.Kind.select(1, 1000, 2)).isEqualTo(Switch.Kind.LOOKUP);
+        }
+
+        @Test
+        void withZeroCases_returnsLookup() {
+            // GIVEN / WHEN / THEN an empty switch falls back to lookup
+            assertThat(Switch.Kind.select(0, 0, 0)).isEqualTo(Switch.Kind.LOOKUP);
+        }
     }
 
-    @Test
-    void select_sparseCaseValues_returnsLookup() {
-        // GIVEN / WHEN / THEN case values 1 and 1000 are far too sparse for a table
-        assertThat(Switch.Kind.select(1, 1000, 2)).isEqualTo(Switch.Kind.LOOKUP);
+
+    @Nested
+    class Constructor {
+
+        @Test
+        void createsChildScopeOfParent() {
+            // GIVEN
+            final ScopeManager.Scope[] parent = new ScopeManager.Scope[1];
+            final Switch[] switch_ = new Switch[1];
+
+            // WHEN
+            buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                parent[0] = manager.scope();
+                switch_[0] = new Switch(parent[0], Map.of(), builder.newLabel());
+            });
+
+            // THEN
+            assertThat(switch_[0].getScope().getParent()).isSameAs(parent[0]);
+        }
     }
 
-    @Test
-    void select_zeroCases_returnsLookup() {
-        // GIVEN / WHEN / THEN an empty switch falls back to lookup
-        assertThat(Switch.Kind.select(0, 0, 0)).isEqualTo(Switch.Kind.LOOKUP);
+
+    @Nested
+    class ResolveLabel {
+
+        @Test
+        void withRegisteredValue_returnsItsLabel() {
+            // GIVEN
+            final Label[] caseLabel = new Label[1];
+            final Switch[] switch_ = new Switch[1];
+
+            // WHEN
+            buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                caseLabel[0] = builder.newLabel();
+                Map<Integer, Label> caseLabels = new LinkedHashMap<>();
+                caseLabels.put(5, caseLabel[0]);
+
+                switch_[0] = new Switch(manager.scope(), caseLabels, builder.newLabel());
+            });
+
+            // THEN
+            assertThat(switch_[0].resolveLabel(5)).isSameAs(caseLabel[0]);
+        }
+
+        @Test
+        void withUnregisteredValue_returnsDefaultLabel() {
+            // GIVEN
+            final Label[] defaultLabel = new Label[1];
+            final Switch[] switch_ = new Switch[1];
+
+            // WHEN
+            buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                defaultLabel[0] = builder.newLabel();
+
+                switch_[0] = new Switch(manager.scope(), Map.of(5, builder.newLabel()), defaultLabel[0]);
+            });
+
+            // THEN
+            assertThat(switch_[0].resolveLabel(999)).isSameAs(defaultLabel[0]);
+        }
     }
 
-    @Test
-    void constructor_createsChildScopeOfParent() {
-        // GIVEN
-        final ScopeManager.Scope[] parent = new ScopeManager.Scope[1];
-        final Switch[] switch_ = new Switch[1];
 
-        // WHEN
-        buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            parent[0] = manager.scope();
-            switch_[0] = new Switch(parent[0], Map.of(), builder.newLabel());
-        });
+    @Nested
+    class Compute {
 
-        // THEN
-        assertThat(switch_[0].getScope().getParent()).isSameAs(parent[0]);
+        @Test
+        void marksAsStarted() {
+            // GIVEN
+            final Switch[] switch_ = new Switch[1];
+
+            // WHEN
+            buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                switch_[0] = buildAndCompleteSwitch(manager.scope(), 1, 2);
+            });
+
+            // THEN
+            assertThat(switch_[0].isStarted()).isTrue();
+        }
+
+        @Test
+        void calledTwice_throwsFlowAlreadyStartedException() {
+            // GIVEN a switch that has already computed its dispatch instruction
+            // WHEN computing it a second time
+            // THEN a FlowAlreadyStartedException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+                switch_.compute();
+
+                switch_.compute();
+            })).isInstanceOf(FlowAlreadyStartedException.class);
+        }
+
+        @Test
+        void afterClose_throwsScopeAlreadyClosedException() {
+            // GIVEN a switch that has already been closed
+            // WHEN computing its dispatch instruction
+            // THEN a ScopeAlreadyClosedException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+                switch_.start();
+                switch_.close();
+
+                switch_.compute();
+            })).isInstanceOf(ScopeAlreadyClosedException.class);
+        }
+
+        @Test
+        void withDenseCaseValues_emitsTableSwitch() {
+            // GIVEN / WHEN a switch with tightly packed case values is completed
+            MethodModel method = buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                buildAndCompleteSwitch(manager.scope(), 1, 2, 3);
+            });
+
+            // THEN the heuristic picked tableswitch, and only tableswitch
+            assertSoftly(softly -> {
+                softly.assertThat(emitsTableSwitch(method)).isTrue();
+                softly.assertThat(emitsLookupSwitch(method)).isFalse();
+            });
+        }
+
+        @Test
+        void withSparseCaseValues_emitsLookupSwitch() {
+            // GIVEN / WHEN a switch with far-apart case values is completed
+            MethodModel method = buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                buildAndCompleteSwitch(manager.scope(), 1, 1000);
+            });
+
+            // THEN the heuristic picked lookupswitch, and only lookupswitch
+            assertSoftly(softly -> {
+                softly.assertThat(emitsLookupSwitch(method)).isTrue();
+                softly.assertThat(emitsTableSwitch(method)).isFalse();
+            });
+        }
     }
 
-    @Test
-    void resolveLabel_withRegisteredValue_returnsItsLabel() {
-        // GIVEN
-        final Label[] caseLabel = new Label[1];
-        final Switch[] switch_ = new Switch[1];
 
-        // WHEN
-        buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            caseLabel[0] = builder.newLabel();
-            Map<Integer, Label> caseLabels = new LinkedHashMap<>();
-            caseLabels.put(5, caseLabel[0]);
+    @Nested
+    class BodyEntry {
 
-            switch_[0] = new Switch(manager.scope(), caseLabels, builder.newLabel());
-        });
+        @Test
+        void beforeCompute_throwsFlowNotStartedException() {
+            // GIVEN a switch whose dispatch instruction hasn't been computed yet
+            // WHEN entering a case body
+            // THEN a FlowNotStartedException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
 
-        // THEN
-        assertThat(switch_[0].resolveLabel(5)).isSameAs(caseLabel[0]);
+                switch_.bodyEntry(1);
+            })).isInstanceOf(FlowNotStartedException.class);
+        }
+
+        @Test
+        void withUnregisteredValue_throwsUnregisteredSwitchCaseValueException() {
+            // GIVEN a computed switch
+            // WHEN entering a case body for a value with no registered case
+            // THEN an UnregisteredSwitchCaseValueException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+                switch_.compute();
+
+                switch_.bodyEntry(999);
+            })).isInstanceOf(UnregisteredSwitchCaseValueException.class);
+        }
+
+        @Test
+        void afterClose_throwsScopeAlreadyClosedException() {
+            // GIVEN a switch that has already been closed
+            // WHEN entering a case body
+            // THEN a ScopeAlreadyClosedException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+                switch_.start();
+                switch_.close();
+
+                switch_.bodyEntry(1);
+            })).isInstanceOf(ScopeAlreadyClosedException.class);
+        }
     }
 
-    @Test
-    void resolveLabel_withUnregisteredValue_returnsDefaultLabel() {
-        // GIVEN
-        final Label[] defaultLabel = new Label[1];
-        final Switch[] switch_ = new Switch[1];
 
-        // WHEN
-        buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            defaultLabel[0] = builder.newLabel();
+    @Nested
+    class DefaultEntry {
 
-            switch_[0] = new Switch(manager.scope(), Map.of(5, builder.newLabel()), defaultLabel[0]);
-        });
+        @Test
+        void beforeCompute_throwsFlowNotStartedException() {
+            // GIVEN a switch whose dispatch instruction hasn't been computed yet
+            // WHEN entering the default body
+            // THEN a FlowNotStartedException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
 
-        // THEN
-        assertThat(switch_[0].resolveLabel(999)).isSameAs(defaultLabel[0]);
+                switch_.defaultEntry();
+            })).isInstanceOf(FlowNotStartedException.class);
+        }
+
+        @Test
+        void afterClose_throwsScopeAlreadyClosedException() {
+            // GIVEN a switch that has already been closed
+            // WHEN entering the default body
+            // THEN a ScopeAlreadyClosedException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+                switch_.start();
+                switch_.close();
+
+                switch_.defaultEntry();
+            })).isInstanceOf(ScopeAlreadyClosedException.class);
+        }
     }
 
-    @Test
-    void compute_marksAsStarted() {
-        // GIVEN
-        final Switch[] switch_ = new Switch[1];
 
-        // WHEN
-        buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            switch_[0] = buildAndCompleteSwitch(manager.scope(), 1, 2);
-        });
+    @Nested
+    class Break {
 
-        // THEN
-        assertThat(switch_[0].isStarted()).isTrue();
+        @Test
+        void beforeCompute_throwsFlowNotStartedException() {
+            // GIVEN a switch whose dispatch instruction hasn't been computed yet
+            // WHEN breaking it
+            // THEN a FlowNotStartedException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+
+                switch_.break_();
+            })).isInstanceOf(FlowNotStartedException.class);
+        }
+
+        @Test
+        void afterCompute_doesNotThrow() {
+            // GIVEN a computed switch
+            // WHEN breaking from within a case body, then completing the switch
+            // THEN no exception is thrown
+            assertThatCode(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                ScopeManager.Scope parentScope = manager.scope();
+
+                Label caseLabel = builder.newLabel();
+                Label defaultLabel = builder.newLabel();
+                Switch switch_ = new Switch(parentScope, Map.of(1, caseLabel), defaultLabel);
+
+                builder.loadConstant(0);
+                switch_.compute();
+                switch_.bodyEntry(1);
+                switch_.break_();
+                switch_.defaultEntry();
+                switch_.close();
+            })).doesNotThrowAnyException();
+        }
+
+        @Test
+        void afterClose_throwsScopeAlreadyClosedException() {
+            // GIVEN a switch that has already been closed
+            // WHEN breaking it
+            // THEN a ScopeAlreadyClosedException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+                switch_.start();
+                switch_.close();
+
+                switch_.break_();
+            })).isInstanceOf(ScopeAlreadyClosedException.class);
+        }
     }
 
-    @Test
-    void compute_calledTwice_throwsFlowAlreadyStartedException() {
-        // GIVEN a switch that has already computed its dispatch instruction
-        // WHEN computing it a second time
-        // THEN a FlowAlreadyStartedException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-            switch_.compute();
 
-            switch_.compute();
-        })).isInstanceOf(FlowAlreadyStartedException.class);
+    @Nested
+    class Close {
+
+        @Test
+        void withoutCompute_doesNotThrow() {
+            // GIVEN a switch that has never computed its dispatch instruction
+            // WHEN closing it
+            // THEN no exception is thrown
+            assertThatCode(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+                switch_.start();
+
+                switch_.close();
+            })).doesNotThrowAnyException();
+        }
+
+        @Test
+        void calledTwice_throwsScopeAlreadyClosedException() {
+            // GIVEN a switch that has already been closed
+            // WHEN closing it a second time
+            // THEN a ScopeAlreadyClosedException is thrown
+            assertThatThrownBy(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
+                switch_.start();
+                switch_.close();
+
+                switch_.close();
+            })).isInstanceOf(ScopeAlreadyClosedException.class);
+        }
+
+        @Test
+        void closesUnderlyingScope() {
+            // GIVEN
+            final Switch[] switch_ = new Switch[1];
+
+            // WHEN
+            buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                switch_[0] = buildAndCompleteSwitch(manager.scope(), 1, 2);
+            });
+
+            // THEN
+            assertThat(switch_[0].getScope().isClosed()).isTrue();
+        }
     }
 
-    @Test
-    void compute_afterClose_throwsScopeAlreadyClosedException() {
-        // GIVEN a switch that has already been closed
-        // WHEN computing its dispatch instruction
-        // THEN a ScopeAlreadyClosedException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-            switch_.start();
-            switch_.close();
 
-            switch_.compute();
-        })).isInstanceOf(ScopeAlreadyClosedException.class);
-    }
+    @Nested
+    class FullLifecycle {
 
-    @Test
-    void compute_withDenseCaseValues_emitsTableSwitch() {
-        // GIVEN / WHEN a switch with tightly packed case values is completed
-        MethodModel method = buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            buildAndCompleteSwitch(manager.scope(), 1, 2, 3);
-        });
-
-        // THEN the heuristic picked tableswitch, and only tableswitch
-        assertThat(emitsTableSwitch(method)).isTrue();
-        assertThat(emitsLookupSwitch(method)).isFalse();
-    }
-
-    @Test
-    void compute_withSparseCaseValues_emitsLookupSwitch() {
-        // GIVEN / WHEN a switch with far-apart case values is completed
-        MethodModel method = buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            buildAndCompleteSwitch(manager.scope(), 1, 1000);
-        });
-
-        // THEN the heuristic picked lookupswitch, and only lookupswitch
-        assertThat(emitsLookupSwitch(method)).isTrue();
-        assertThat(emitsTableSwitch(method)).isFalse();
-    }
-
-    @Test
-    void bodyEntry_beforeCompute_throwsFlowNotStartedException() {
-        // GIVEN a switch whose dispatch instruction hasn't been computed yet
-        // WHEN entering a case body
-        // THEN a FlowNotStartedException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-
-            switch_.bodyEntry(1);
-        })).isInstanceOf(FlowNotStartedException.class);
-    }
-
-    @Test
-    void bodyEntry_withUnregisteredValue_throwsUnregisteredSwitchCaseValueException() {
-        // GIVEN a computed switch
-        // WHEN entering a case body for a value with no registered case
-        // THEN an UnregisteredSwitchCaseValueException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-            switch_.compute();
-
-            switch_.bodyEntry(999);
-        })).isInstanceOf(UnregisteredSwitchCaseValueException.class);
-    }
-
-    @Test
-    void bodyEntry_afterClose_throwsScopeAlreadyClosedException() {
-        // GIVEN a switch that has already been closed
-        // WHEN entering a case body
-        // THEN a ScopeAlreadyClosedException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-            switch_.start();
-            switch_.close();
-
-            switch_.bodyEntry(1);
-        })).isInstanceOf(ScopeAlreadyClosedException.class);
-    }
-
-    @Test
-    void defaultEntry_beforeCompute_throwsFlowNotStartedException() {
-        // GIVEN a switch whose dispatch instruction hasn't been computed yet
-        // WHEN entering the default body
-        // THEN a FlowNotStartedException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-
-            switch_.defaultEntry();
-        })).isInstanceOf(FlowNotStartedException.class);
-    }
-
-    @Test
-    void defaultEntry_afterClose_throwsScopeAlreadyClosedException() {
-        // GIVEN a switch that has already been closed
-        // WHEN entering the default body
-        // THEN a ScopeAlreadyClosedException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-            switch_.start();
-            switch_.close();
-
-            switch_.defaultEntry();
-        })).isInstanceOf(ScopeAlreadyClosedException.class);
-    }
-
-    @Test
-    void break_beforeCompute_throwsFlowNotStartedException() {
-        // GIVEN a switch whose dispatch instruction hasn't been computed yet
-        // WHEN breaking it
-        // THEN a FlowNotStartedException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-
-            switch_.break_();
-        })).isInstanceOf(FlowNotStartedException.class);
-    }
-
-    @Test
-    void break_afterCompute_doesNotThrow() {
-        // GIVEN a computed switch
-        // WHEN breaking from within a case body, then completing the switch
-        // THEN no exception is thrown
-        assertThatCode(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            ScopeManager.Scope parentScope = manager.scope();
-
-            Label caseLabel = builder.newLabel();
-            Label defaultLabel = builder.newLabel();
-            Switch switch_ = new Switch(parentScope, Map.of(1, caseLabel), defaultLabel);
-
-            builder.loadConstant(0);
-            switch_.compute();
-            switch_.bodyEntry(1);
-            switch_.break_();
-            switch_.defaultEntry();
-            switch_.close();
-        })).doesNotThrowAnyException();
-    }
-
-    @Test
-    void break_afterClose_throwsScopeAlreadyClosedException() {
-        // GIVEN a switch that has already been closed
-        // WHEN breaking it
-        // THEN a ScopeAlreadyClosedException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-            switch_.start();
-            switch_.close();
-
-            switch_.break_();
-        })).isInstanceOf(ScopeAlreadyClosedException.class);
-    }
-
-    @Test
-    void close_withoutCompute_doesNotThrow() {
-        // GIVEN a switch that has never computed its dispatch instruction
-        // WHEN closing it
-        // THEN no exception is thrown
-        assertThatCode(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-            switch_.start();
-
-            switch_.close();
-        })).doesNotThrowAnyException();
-    }
-
-    @Test
-    void close_calledTwice_throwsScopeAlreadyClosedException() {
-        // GIVEN a switch that has already been closed
-        // WHEN closing it a second time
-        // THEN a ScopeAlreadyClosedException is thrown
-        assertThatThrownBy(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            Switch switch_ = new Switch(manager.scope(), Map.of(1, builder.newLabel()), builder.newLabel());
-            switch_.start();
-            switch_.close();
-
-            switch_.close();
-        })).isInstanceOf(ScopeAlreadyClosedException.class);
-    }
-
-    @Test
-    void close_closesUnderlyingScope() {
-        // GIVEN
-        final Switch[] switch_ = new Switch[1];
-
-        // WHEN
-        buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            switch_[0] = buildAndCompleteSwitch(manager.scope(), 1, 2);
-        });
-
-        // THEN
-        assertThat(switch_[0].getScope().isClosed()).isTrue();
-    }
-
-    @Test
-    void fullLifecycle_computeBodyEntriesClose_doesNotThrow() {
-        // GIVEN / WHEN / THEN a switch with several cases taken through its
-        // whole lifecycle builds valid bytecode without throwing
-        assertThatCode(() -> buildMethod(builder -> {
-            ScopeManager manager = new ScopeManager(builder);
-            buildAndCompleteSwitch(manager.scope(), 1, 2, 3);
-        })).doesNotThrowAnyException();
+        @Test
+        void computeBodyEntriesClose_doesNotThrow() {
+            // GIVEN / WHEN / THEN a switch with several cases taken through its
+            // whole lifecycle builds valid bytecode without throwing
+            assertThatCode(() -> buildMethod(builder -> {
+                ScopeManager manager = new ScopeManager(builder);
+                buildAndCompleteSwitch(manager.scope(), 1, 2, 3);
+            })).doesNotThrowAnyException();
+        }
     }
 }
