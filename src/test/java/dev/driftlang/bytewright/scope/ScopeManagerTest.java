@@ -46,38 +46,6 @@ class ScopeManagerTest {
     private static final ClassDesc HOST = ClassDesc.of("dev.driftlang.bytewright.scope.GeneratedTestHost");
 
 
-    /**
-     * Builds a throwaway static {@code test()} method whose body is produced
-     * by {@code body}, then returns the resulting method model for inspection.
-     */
-    private static MethodModel buildMethod(final Consumer<CodeBuilder> body) {
-        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder.withMethodBody(
-                "test",
-                MethodTypeDesc.of(CD_void),
-                ClassFile.ACC_STATIC,
-                codeBuilder -> {
-                    body.accept(codeBuilder);
-                    codeBuilder.return_();
-                }));
-
-        return ClassFile.of()
-                .parse(bytes)
-                .methods()
-                .getFirst();
-    }
-
-    /**
-     * Returns the entries of {@code method}'s {@code LocalVariableTable}
-     * attribute, or an empty list if it has none.
-     */
-    private static List<LocalVariableInfo> localVariableTableOf(final MethodModel method) {
-        return method.code()
-                .flatMap(code -> code.findAttribute(Attributes.localVariableTable()))
-                .map(LocalVariableTableAttribute::localVariables)
-                .orElse(List.of());
-    }
-
-
     @Nested
     class Declare {
 
@@ -379,5 +347,37 @@ class ScopeManagerTest {
                         .isInstanceOf(UnexpectedScopeByManagerException.class);
             });
         }
+    }
+
+
+    /**
+     * Builds a throwaway static {@code test()} method whose body is produced
+     * by {@code body}, then returns the resulting method model for inspection.
+     */
+    private static MethodModel buildMethod(final Consumer<CodeBuilder> body) {
+        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder.withMethodBody(
+                "test",
+                MethodTypeDesc.of(CD_void),
+                ClassFile.ACC_STATIC,
+                codeBuilder -> {
+                    body.accept(codeBuilder);
+                    codeBuilder.return_();
+                }));
+
+        return ClassFile.of()
+                .parse(bytes)
+                .methods()
+                .getFirst();
+    }
+
+    /**
+     * Returns the entries of {@code method}'s {@code LocalVariableTable}
+     * attribute, or an empty list if it has none.
+     */
+    private static List<LocalVariableInfo> localVariableTableOf(final MethodModel method) {
+        return method.code()
+                .flatMap(code -> code.findAttribute(Attributes.localVariableTable()))
+                .map(LocalVariableTableAttribute::localVariables)
+                .orElse(List.of());
     }
 }

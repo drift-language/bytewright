@@ -41,27 +41,6 @@ class FlowTest {
     private static final ClassDesc HOST = ClassDesc.of("dev.driftlang.bytewright.flow.GeneratedTestHost");
 
 
-    /**
-     * Builds a throwaway static {@code test()} method whose body is produced
-     * by {@code body}, then returns the resulting method model for inspection.
-     */
-    private static MethodModel buildMethod(final Consumer<CodeBuilder> body) {
-        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder.withMethodBody(
-                "test",
-                MethodTypeDesc.of(CD_void),
-                ClassFile.ACC_STATIC,
-                codeBuilder -> {
-                    body.accept(codeBuilder);
-                    codeBuilder.return_();
-                }));
-
-        return ClassFile.of()
-                .parse(bytes)
-                .methods()
-                .getFirst();
-    }
-
-
     @Nested
     class Constructor {
 
@@ -250,6 +229,27 @@ class FlowTest {
                 flow.close();
             })).isInstanceOf(ScopeAlreadyClosedException.class);
         }
+    }
+
+
+    /**
+     * Builds a throwaway static {@code test()} method whose body is produced
+     * by {@code body}, then returns the resulting method model for inspection.
+     */
+    private static MethodModel buildMethod(final Consumer<CodeBuilder> body) {
+        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder.withMethodBody(
+                "test",
+                MethodTypeDesc.of(CD_void),
+                ClassFile.ACC_STATIC,
+                codeBuilder -> {
+                    body.accept(codeBuilder);
+                    codeBuilder.return_();
+                }));
+
+        return ClassFile.of()
+                .parse(bytes)
+                .methods()
+                .getFirst();
     }
 
 

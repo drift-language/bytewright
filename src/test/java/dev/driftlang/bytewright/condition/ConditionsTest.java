@@ -66,56 +66,6 @@ class ConditionsTest {
     };
 
 
-    /**
-     * Returns a leaf condition testing the {@code boolean} parameter at
-     * {@code slot}.
-     */
-    private static Condition parameter(final int slot) {
-        return (builder, target, when) -> {
-            builder.iload(slot)
-                    .branch(when ? Opcode.IFNE : Opcode.IFEQ, target);
-        };
-    }
-
-    /**
-     * Generates and loads a {@code test(a, b)} method that emits
-     * {@code condition} with the given {@code when}, and returns whether
-     * the jump was taken.
-     */
-    private static MethodHandle compile(final Condition condition, final boolean when) throws Exception {
-        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder
-                .withSuperclass(CD_Object)
-                .withMethodBody(
-                        "test",
-                        MethodTypeDesc.of(CD_boolean, CD_boolean, CD_boolean),
-                        ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
-                        codeBuilder -> {
-                            Label jumped = codeBuilder.newLabel();
-
-                            condition.jump(codeBuilder, jumped, when);
-
-                            codeBuilder.iconst_0()
-                                    .ireturn()
-                                    .labelBinding(jumped)
-                                    .iconst_1()
-                                    .ireturn();
-                        }));
-
-        MethodHandles.Lookup lookup = MethodHandles.lookup().defineHiddenClass(bytes, true);
-
-        return lookup.findStatic(lookup.lookupClass(), "test", TEST_TYPE);
-    }
-
-    /**
-     * Runs {@code condition} emitted with {@code when}, on inputs {@code a}
-     * and {@code b}.
-     */
-    private static boolean jumps(final Condition condition, final boolean when,
-                                 final boolean a, final boolean b) throws Throwable {
-        return (boolean) compile(condition, when).invokeExact(a, b);
-    }
-
-
     @Nested
     class ParameterLeaf {
 
@@ -373,5 +323,55 @@ class ConditionsTest {
                 softly.assertThat(emitted).isEmpty();
             });
         }
+    }
+
+
+    /**
+     * Returns a leaf condition testing the {@code boolean} parameter at
+     * {@code slot}.
+     */
+    private static Condition parameter(final int slot) {
+        return (builder, target, when) -> {
+            builder.iload(slot)
+                    .branch(when ? Opcode.IFNE : Opcode.IFEQ, target);
+        };
+    }
+
+    /**
+     * Generates and loads a {@code test(a, b)} method that emits
+     * {@code condition} with the given {@code when}, and returns whether
+     * the jump was taken.
+     */
+    private static MethodHandle compile(final Condition condition, final boolean when) throws Exception {
+        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder
+                .withSuperclass(CD_Object)
+                .withMethodBody(
+                        "test",
+                        MethodTypeDesc.of(CD_boolean, CD_boolean, CD_boolean),
+                        ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
+                        codeBuilder -> {
+                            Label jumped = codeBuilder.newLabel();
+
+                            condition.jump(codeBuilder, jumped, when);
+
+                            codeBuilder.iconst_0()
+                                    .ireturn()
+                                    .labelBinding(jumped)
+                                    .iconst_1()
+                                    .ireturn();
+                        }));
+
+        MethodHandles.Lookup lookup = MethodHandles.lookup().defineHiddenClass(bytes, true);
+
+        return lookup.findStatic(lookup.lookupClass(), "test", TEST_TYPE);
+    }
+
+    /**
+     * Runs {@code condition} emitted with {@code when}, on inputs {@code a}
+     * and {@code b}.
+     */
+    private static boolean jumps(final Condition condition, final boolean when,
+                                 final boolean a, final boolean b) throws Throwable {
+        return (boolean) compile(condition, when).invokeExact(a, b);
     }
 }

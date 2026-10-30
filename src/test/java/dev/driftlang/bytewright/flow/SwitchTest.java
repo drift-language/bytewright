@@ -48,72 +48,6 @@ class SwitchTest {
     private static final ClassDesc HOST = ClassDesc.of("dev.driftlang.bytewright.flow.GeneratedTestHost");
 
 
-    /**
-     * Builds a throwaway static {@code test()} method whose body is produced
-     * by {@code body}, then returns the resulting method model for inspection.
-     */
-    private static MethodModel buildMethod(final Consumer<CodeBuilder> body) {
-        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder.withMethodBody(
-                "test",
-                MethodTypeDesc.of(CD_void),
-                ClassFile.ACC_STATIC,
-                codeBuilder -> {
-                    body.accept(codeBuilder);
-                    codeBuilder.return_();
-                }));
-
-        return ClassFile.of()
-                .parse(bytes)
-                .methods()
-                .getFirst();
-    }
-
-    /**
-     * Builds a {@link Switch} for the given case values, drives it through its
-     * whole lifecycle (dispatch, every case body, the default body, and
-     * close), and returns it.
-     */
-    private static Switch buildAndCompleteSwitch(final ScopeManager.Scope parentScope, final int... values) {
-        final CodeBuilder builder = parentScope.getBuilder();
-        final Map<Integer, Label> caseLabels = new LinkedHashMap<>();
-        for (final int value : values) {
-            caseLabels.put(value, builder.newLabel());
-        }
-        final Label defaultLabel = builder.newLabel();
-
-        final Switch switch_ = new Switch(parentScope, caseLabels, defaultLabel);
-        builder.loadConstant(0);
-        switch_.compute();
-        for (final int value : values) {
-            switch_.bodyEntry(value);
-        }
-        switch_.defaultEntry();
-        switch_.close();
-
-        return switch_;
-    }
-
-    /**
-     * Returns whether {@code method} contains a {@code tableswitch}
-     * instruction.
-     */
-    private static boolean emitsTableSwitch(final MethodModel method) {
-        return method.code().orElseThrow()
-                .elementStream()
-                .anyMatch(TableSwitchInstruction.class::isInstance);
-    }
-
-    /**
-     * Returns whether {@code method} contains a {@code lookupswitch}
-     * instruction.
-     */
-    private static boolean emitsLookupSwitch(final MethodModel method) {
-        return method.code().orElseThrow()
-                .elementStream()
-                .anyMatch(LookupSwitchInstruction.class::isInstance);
-    }
-
-
     @Nested
     class Select {
 
@@ -477,5 +411,71 @@ class SwitchTest {
                 buildAndCompleteSwitch(manager.scope(), 1, 2, 3);
             })).doesNotThrowAnyException();
         }
+    }
+
+
+    /**
+     * Builds a throwaway static {@code test()} method whose body is produced
+     * by {@code body}, then returns the resulting method model for inspection.
+     */
+    private static MethodModel buildMethod(final Consumer<CodeBuilder> body) {
+        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder.withMethodBody(
+                "test",
+                MethodTypeDesc.of(CD_void),
+                ClassFile.ACC_STATIC,
+                codeBuilder -> {
+                    body.accept(codeBuilder);
+                    codeBuilder.return_();
+                }));
+
+        return ClassFile.of()
+                .parse(bytes)
+                .methods()
+                .getFirst();
+    }
+
+    /**
+     * Builds a {@link Switch} for the given case values, drives it through its
+     * whole lifecycle (dispatch, every case body, the default body, and
+     * close), and returns it.
+     */
+    private static Switch buildAndCompleteSwitch(final ScopeManager.Scope parentScope, final int... values) {
+        final CodeBuilder builder = parentScope.getBuilder();
+        final Map<Integer, Label> caseLabels = new LinkedHashMap<>();
+        for (final int value : values) {
+            caseLabels.put(value, builder.newLabel());
+        }
+        final Label defaultLabel = builder.newLabel();
+
+        final Switch switch_ = new Switch(parentScope, caseLabels, defaultLabel);
+        builder.loadConstant(0);
+        switch_.compute();
+        for (final int value : values) {
+            switch_.bodyEntry(value);
+        }
+        switch_.defaultEntry();
+        switch_.close();
+
+        return switch_;
+    }
+
+    /**
+     * Returns whether {@code method} contains a {@code tableswitch}
+     * instruction.
+     */
+    private static boolean emitsTableSwitch(final MethodModel method) {
+        return method.code().orElseThrow()
+                .elementStream()
+                .anyMatch(TableSwitchInstruction.class::isInstance);
+    }
+
+    /**
+     * Returns whether {@code method} contains a {@code lookupswitch}
+     * instruction.
+     */
+    private static boolean emitsLookupSwitch(final MethodModel method) {
+        return method.code().orElseThrow()
+                .elementStream()
+                .anyMatch(LookupSwitchInstruction.class::isInstance);
     }
 }

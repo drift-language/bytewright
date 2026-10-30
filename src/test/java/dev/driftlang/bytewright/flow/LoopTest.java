@@ -53,63 +53,6 @@ class LoopTest {
     private static final ClassDesc HOST = ClassDesc.of("dev.driftlang.bytewright.flow.GeneratedTestHost");
 
 
-    /**
-     * Builds a throwaway static {@code test()} method whose body is produced
-     * by {@code body}, then returns the resulting method model for inspection.
-     */
-    private static MethodModel buildMethod(final Consumer<CodeBuilder> body) {
-        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder.withMethodBody(
-                "test",
-                MethodTypeDesc.of(CD_void),
-                ClassFile.ACC_STATIC,
-                codeBuilder -> {
-                    body.accept(codeBuilder);
-                    codeBuilder.return_();
-                }));
-
-        return ClassFile.of()
-                .parse(bytes)
-                .methods()
-                .getFirst();
-    }
-
-    /**
-     * Returns the code elements (instructions and label targets) of
-     * {@code method}, in emission order.
-     */
-    private static List<CodeElement> elementsOf(final MethodModel method) {
-        return method.code()
-                .orElseThrow()
-                .elementList();
-    }
-
-    /**
-     * Maps each label bound in {@code elements} to the index of its
-     * {@link LabelTarget}.
-     */
-    private static Map<Label, Integer> labelPositions(final List<CodeElement> elements) {
-        Map<Label, Integer> positions = new HashMap<>();
-
-        for (int i = 0; i < elements.size(); i++)
-            if (elements.get(i) instanceof LabelTarget target)
-                positions.put(target.label(), i);
-
-        return positions;
-    }
-
-    /**
-     * Returns the indices of the {@code goto} instructions in
-     * {@code elements}.
-     */
-    private static List<Integer> gotoPositions(final List<CodeElement> elements) {
-        return IntStream.range(0, elements.size())
-                .filter(i -> elements.get(i) instanceof BranchInstruction branch
-                        && branch.opcode() == Opcode.GOTO)
-                .boxed()
-                .toList();
-    }
-
-
     @Nested
     class Constructor {
 
@@ -523,5 +466,62 @@ class LoopTest {
                 }
             })).doesNotThrowAnyException();
         }
+    }
+
+
+    /**
+     * Builds a throwaway static {@code test()} method whose body is produced
+     * by {@code body}, then returns the resulting method model for inspection.
+     */
+    private static MethodModel buildMethod(final Consumer<CodeBuilder> body) {
+        byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder.withMethodBody(
+                "test",
+                MethodTypeDesc.of(CD_void),
+                ClassFile.ACC_STATIC,
+                codeBuilder -> {
+                    body.accept(codeBuilder);
+                    codeBuilder.return_();
+                }));
+
+        return ClassFile.of()
+                .parse(bytes)
+                .methods()
+                .getFirst();
+    }
+
+    /**
+     * Returns the code elements (instructions and label targets) of
+     * {@code method}, in emission order.
+     */
+    private static List<CodeElement> elementsOf(final MethodModel method) {
+        return method.code()
+                .orElseThrow()
+                .elementList();
+    }
+
+    /**
+     * Maps each label bound in {@code elements} to the index of its
+     * {@link LabelTarget}.
+     */
+    private static Map<Label, Integer> labelPositions(final List<CodeElement> elements) {
+        Map<Label, Integer> positions = new HashMap<>();
+
+        for (int i = 0; i < elements.size(); i++)
+            if (elements.get(i) instanceof LabelTarget target)
+                positions.put(target.label(), i);
+
+        return positions;
+    }
+
+    /**
+     * Returns the indices of the {@code goto} instructions in
+     * {@code elements}.
+     */
+    private static List<Integer> gotoPositions(final List<CodeElement> elements) {
+        return IntStream.range(0, elements.size())
+                .filter(i -> elements.get(i) instanceof BranchInstruction branch
+                        && branch.opcode() == Opcode.GOTO)
+                .boxed()
+                .toList();
     }
 }
