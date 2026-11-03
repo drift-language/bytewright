@@ -12,7 +12,7 @@ package dev.driftlang.bytewright.flow;
 
 import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
-import dev.driftlang.bytewright.scope.ScopeManager;
+import dev.driftlang.bytewright.scope.ScopeManager.Scope;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
 import lombok.Getter;
 
@@ -28,16 +28,21 @@ import java.lang.classfile.Label;
  */
 public abstract class Flow implements AutoCloseable {
 
+    /** The flow's {@link Scope}. */
     @Getter
-    protected final ScopeManager.Scope scope;
+    protected final Scope scope;
 
+    /** The end label of the flow. */
     protected final Label endLabel;
 
     @Getter
     private boolean started = false;
 
 
-    protected Flow(final ScopeManager.Scope parentScope) {
+    /**
+     * @param parentScope the parent instance of the current {@link Scope}.
+     */
+    protected Flow(final Scope parentScope) {
         this.scope = parentScope.scope();
         this.endLabel = getScope().getBuilder().newLabel();
     }
@@ -95,7 +100,7 @@ public abstract class Flow implements AutoCloseable {
      * @throws ScopeAlreadyClosedException if this flow's scope is already
      *                                     closed.
      * @see #requireStarted()
-     * @see ScopeManager.Scope#requireNotClosed()
+     * @see Scope#requireNotClosed()
      */
     protected void requireActive() {
         requireStarted();
