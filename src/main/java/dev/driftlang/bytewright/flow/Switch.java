@@ -12,7 +12,7 @@ package dev.driftlang.bytewright.flow;
 
 import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
-import dev.driftlang.bytewright.flow.exception.UnregisteredSwitchCaseValueException;
+import dev.driftlang.bytewright.flow.exception.UnregisteredSwitchCaseByValueException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
 
@@ -36,6 +36,9 @@ public class Switch extends Flow {
 
 
     /**
+     * Creates a switch with a given parent scope, case labels, and a default
+     * label.
+     *
      * @param parentScope the parent instance of the current scope.
      * @param caseLabels a map containing entries linking each value with its
      *                   {@link Label}.
@@ -89,13 +92,13 @@ public class Switch extends Flow {
                 .map(entry -> SwitchCase.of(entry.getKey(), entry.getValue()))
                 .toList();
 
-        switch (kind) {
+        final CodeBuilder _ = switch (kind) {
             case TABLE -> getScope().getBuilder()
                     .tableswitch(defaultLabel, cases);
 
             case LOOKUP -> getScope().getBuilder()
                     .lookupswitch(defaultLabel, cases);
-        }
+        };
     }
 
     /**
@@ -107,7 +110,7 @@ public class Switch extends Flow {
      * @throws FlowNotStartedException if this flow has not been started yet.
      * @throws ScopeAlreadyClosedException if this flow's scope is already
      *                                     closed.
-     * @throws UnregisteredSwitchCaseValueException if the provided value
+     * @throws UnregisteredSwitchCaseByValueException if the provided value
      *                                              doesn't correspond to a
      *                                              case.
      */
@@ -120,7 +123,7 @@ public class Switch extends Flow {
             getScope().getBuilder()
                     .labelBinding(caseLabel);
         } else {
-            throw new UnregisteredSwitchCaseValueException(value);
+            throw new UnregisteredSwitchCaseByValueException(value);
         }
     }
 

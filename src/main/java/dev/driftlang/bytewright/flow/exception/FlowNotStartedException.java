@@ -21,7 +21,7 @@ import dev.driftlang.bytewright.exception.BytewrightException;
  */
 public class FlowNotStartedException extends BytewrightException {
 
-    ///
+    /** Create the exception for a not started flow. */
     public FlowNotStartedException() {
         super("The flow has not started yet.");
     }

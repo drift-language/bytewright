@@ -20,7 +20,9 @@ import dev.driftlang.bytewright.scope.ScopeManager.Scope;
  */
 public class UnexpectedScopeByManagerException extends UnexpectedScopeException {
 
-    ///
+    /**
+     * Creates the exception for a scope used in a wrong manager.
+     */
     public UnexpectedScopeByManagerException() {
         super("the provided scope does not belong to the same provided manager.");
     }

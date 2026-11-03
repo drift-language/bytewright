@@ -37,6 +37,11 @@ import static lombok.AccessLevel.PRIVATE;
 @RequiredArgsConstructor
 public class ScopeManager {
 
+    /**
+     * The instance of {@link CodeBuilder} used by the current manager.
+     *
+     * @return the {@link CodeBuilder} instance used by the current manager.
+     */
     @Getter
     private final CodeBuilder builder;
 
@@ -60,8 +65,7 @@ public class ScopeManager {
      * all the variables declared in its parent scope and all the ones in its
      * ancestors' scopes as well.
      * <p>
-     * The provided parent must depend on the current {@link ScopeManager}
-     * instance.
+     * The provided parent must depend on the current scope manager instance.
      *
      * @param parent the parent scope.
      * @return a new scope instance that is a sub-scope of the specified parent.
@@ -92,12 +96,16 @@ public class ScopeManager {
 
         /**
          * The {@link ScopeManager} that created this {@link Scope}.
+         *
+         * @return the {@link ScopeManager} that created this scope.
          */
         @Getter
         private final ScopeManager manager;
 
         /**
-         * The parent scope if any, or {@code null} otherwise.
+         * The parent scope, if any.
+         *
+         * @return the parent scope, if any, null otherwise.
          */
         @Getter
         private final @Nullable Scope parent;
@@ -114,6 +122,9 @@ public class ScopeManager {
          * <p>
          * Once set to {@code true}, this field should not be reset to {@code
          * false}.
+         *
+         * @return {@code true} if the current scope is closed, {@code false}
+         *         otherwise.
          */
         @Getter
         private boolean isClosed = false;
@@ -190,8 +201,10 @@ public class ScopeManager {
         }
 
         /**
-         * @return the {@link CodeBuilder} instance belonging to the
-         *         {@link ScopeManager scope's manager}.
+         * Returns the {@link CodeBuilder} instancde belonging to the {@link
+         * ScopeManager scope's manager}.
+         *
+         * @return the {@link CodeBuilder} instance.
          */
         public CodeBuilder getBuilder() {
             return manager.getBuilder();
@@ -208,6 +221,8 @@ public class ScopeManager {
         }
 
         /**
+         * Requires the current scope to not be closed.
+         *
          * @throws ScopeAlreadyClosedException if the scope is closed.
          */
         public void requireNotClosed() {

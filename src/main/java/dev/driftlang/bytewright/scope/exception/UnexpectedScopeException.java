@@ -22,6 +22,8 @@ import dev.driftlang.bytewright.scope.ScopeManager.Scope;
 public class UnexpectedScopeException extends BytewrightException {
 
     /**
+     * Creates the exception for an unexpected scope.
+     *
      * @param reason more details about the unexpected situation.
      */
     public UnexpectedScopeException(String reason) {

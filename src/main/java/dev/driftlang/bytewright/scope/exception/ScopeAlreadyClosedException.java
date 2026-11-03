@@ -24,7 +24,10 @@ import dev.driftlang.bytewright.scope.ScopeManager.Scope;
  */
 public class ScopeAlreadyClosedException extends BytewrightException {
 
-    ///
+    /**
+     * Creates the exception for an already closed {@link Scope} tried to be
+     * closed another time.
+     */
     public ScopeAlreadyClosedException() {
         super("This scope is already closed and cannot be used anymore.");
     }

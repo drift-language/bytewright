@@ -12,7 +12,7 @@ package dev.driftlang.bytewright.flow;
 
 import dev.driftlang.bytewright.flow.exception.FlowAlreadyStartedException;
 import dev.driftlang.bytewright.flow.exception.FlowNotStartedException;
-import dev.driftlang.bytewright.flow.exception.UnregisteredSwitchCaseValueException;
+import dev.driftlang.bytewright.flow.exception.UnregisteredSwitchCaseByValueException;
 import dev.driftlang.bytewright.scope.ScopeManager;
 import dev.driftlang.bytewright.scope.exception.ScopeAlreadyClosedException;
 import org.junit.jupiter.api.Nested;
@@ -242,7 +242,7 @@ class SwitchTest {
                 switch_.compute();
 
                 switch_.bodyEntry(999);
-            })).isInstanceOf(UnregisteredSwitchCaseValueException.class);
+            })).isInstanceOf(UnregisteredSwitchCaseByValueException.class);
         }
 
         @Test

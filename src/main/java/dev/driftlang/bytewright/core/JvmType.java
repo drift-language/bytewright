@@ -30,9 +30,12 @@ import static java.lang.constant.ConstantDescs.*;
  * any other type can be built with the {@code of} and {@code arrayOf}
  * factory methods.
  *
+ * @param descriptor the {@link ClassDesc} of the type.
+ *
  * @author Jonathan (GitHub: belicfr)
  */
-public record JvmType(ClassDesc descriptor) {
+public record JvmType(
+        ClassDesc descriptor) {
 
     /** Represents the {@code byte} primitive type. */
     public static final JvmType BYTE    = new JvmType(CD_byte);
@@ -66,6 +69,8 @@ public record JvmType(ClassDesc descriptor) {
 
 
     /**
+     * Returns the {@link TypeKind} of this type.
+     *
      * @return the {@link TypeKind} of this type.
      */
     public TypeKind kind() {
@@ -73,6 +78,8 @@ public record JvmType(ClassDesc descriptor) {
     }
 
     /**
+     * Returns if the type is an array.
+     *
      * @return {@code true} if the type is an array, and {@code false} otherwise.
      */
     public boolean isArray() {
@@ -80,25 +87,29 @@ public record JvmType(ClassDesc descriptor) {
     }
 
     /**
-     * @return {@code true} if the type is a primitive, and {@code false}
-     *         otherwise.
+     * Returns if the type is primary.
+     *
+     * @return {@code true} if the type is primary, and {@code false} otherwise.
      */
     public boolean isPrimitive() {
         return descriptor().isPrimitive();
     }
 
     /**
-     * @return the elements' type if the current {@link JvmType} is an array,
-     *         and {@link Optional#empty()} otherwise.
+     * If the current type is an array, it returns the contained type, {@link
+     * Optional#empty()} otherwise.
+     *
+     * @return the elements' type if it is an array, empty otherwise.
      */
     public Optional<JvmType> componentType() {
         return isArray()
                 ? Optional.of(new JvmType(descriptor().componentType()))
                 : Optional.empty();
-
     }
 
     /**
+     * Returns the slot size of the type.
+     *
      * @return the slot size of the type.
      */
     public int slotSize() {
@@ -107,10 +118,10 @@ public record JvmType(ClassDesc descriptor) {
 
 
     /**
-     * Gets the {@link JvmType} from a given class instance.
+     * Gets the type from a given class instance.
      *
      * @param clazz the class instance from which to get the ClassDesc.
-     * @return an Optional containing the {@link JvmType} if it exists.
+     * @return an Optional containing the type if it exists.
      */
     public static Optional<JvmType> of(final Class<?> clazz) {
         return clazz.describeConstable()
@@ -118,21 +129,21 @@ public record JvmType(ClassDesc descriptor) {
     }
 
     /**
-     * Gets the {@link JvmType} from a given class descriptor string.
+     * Gets the type from a given class descriptor string.
      *
      * @param descriptor the class descriptor string from which to get the
      *                   ClassDesc.
-     * @return an Optional containing the {@link JvmType} if it exists;
+     * @return an Optional containing the type if it exists;
      */
     public static JvmType of(final ClassDesc descriptor) {
         return new JvmType(descriptor);
     }
 
     /**
-     * Creates a wrapped {@link JvmType} representing an array.
+     * Creates a wrapped type representing an array.
      *
      * @param component the type of the components in the array.
-     * @return the wrapped {@link JvmType} representing an array of the given
+     * @return the wrapped type representing an array of the given
      *         type.
      */
     public static JvmType arrayOf(final JvmType component) {
@@ -140,12 +151,12 @@ public record JvmType(ClassDesc descriptor) {
     }
 
     /**
-     * Creates a wrapped {@link JvmType} representing an array of the given
+     * Creates a wrapped type representing an array of the given
      * dimension.
      *
      * @param component the type of the components in the array.
      * @param dimensions the dimension of the array to create.
-     * @return the wrapped {@link JvmType} representing an array of the given
+     * @return the wrapped type representing an array of the given
      *         type and dimension.
      */
     public static JvmType arrayOf(final JvmType component, final int dimensions) {

@@ -28,18 +28,29 @@ import java.lang.classfile.Label;
  */
 public abstract class Flow implements AutoCloseable {
 
-    /** The flow's {@link Scope}. */
+    /**
+     * The flow's {@link Scope}.
+     *
+     * @return the flow's scope.
+     */
     @Getter
     protected final Scope scope;
 
     /** The end label of the flow. */
     protected final Label endLabel;
 
+    /**
+     * If the flow is started.
+     *
+     * @return {@code true} if the flow is started, {@code false} otherwise.
+     */
     @Getter
     private boolean started = false;
 
 
     /**
+     * Creates a flow with a given parent scope.
+     *
      * @param parentScope the parent instance of the current {@link Scope}.
      */
     protected Flow(final Scope parentScope) {
@@ -79,7 +90,6 @@ public abstract class Flow implements AutoCloseable {
      *
      * @throws FlowNotStartedException if the flow operation has not been
      *                                 started yet.
-     * @see #isStarted()
      */
     protected void requireStarted() {
         if (!isStarted())
@@ -91,7 +101,6 @@ public abstract class Flow implements AutoCloseable {
      *
      * @throws FlowAlreadyStartedException if the flow operation has already
      *                                     been started.
-     * @see #isStarted()
      */
     protected void requireNotStarted() {
         if (isStarted())

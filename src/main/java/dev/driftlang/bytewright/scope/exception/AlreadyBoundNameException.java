@@ -22,6 +22,8 @@ import dev.driftlang.bytewright.exception.BytewrightException;
 public class AlreadyBoundNameException extends BytewrightException {
 
     /**
+     * Creates the exception for the already-bound {@code name}.
+     *
      * @param name the name that is already bound.
      */
     public AlreadyBoundNameException(final String name) {

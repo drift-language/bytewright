@@ -36,6 +36,8 @@ public class Loop extends Flow {
 
 
     /**
+     * Creates a loop with a given parent scope.
+     *
      * @param parentScope the parent instance of the current scope.
      */
     public Loop(final ScopeManager.Scope parentScope) {
@@ -141,7 +143,7 @@ public class Loop extends Flow {
     /**
      * Binds {@link #continueLabel} if in the body context ({@link #inBody} ==
      * {@code true}); then emits a goto using {@link #bodyLabel} and finishes
-     * with {@link Flow#close()}.
+     * with the flow's closing behavior.
      *
      * @throws FlowNotStartedException if the flow operation has not been
      *                                 started yet.

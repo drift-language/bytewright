@@ -20,7 +20,9 @@ import dev.driftlang.bytewright.exception.BytewrightException;
  */
 public class NotInLoopBodyException extends BytewrightException {
 
-    ///
+    /**
+     * Creates the exception for a loop-based action that is not in a loop body.
+     */
     public NotInLoopBodyException() {
         super("This action can only be performed in a loop body.");
     }

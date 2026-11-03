@@ -22,7 +22,7 @@ import dev.driftlang.bytewright.flow.Flow;
  */
 public class FlowAlreadyStartedException extends BytewrightException {
 
-    ///
+    /** Creates the exception for an already started flow. */
     public FlowAlreadyStartedException() {
         super("The flow operation is already started.");
     }

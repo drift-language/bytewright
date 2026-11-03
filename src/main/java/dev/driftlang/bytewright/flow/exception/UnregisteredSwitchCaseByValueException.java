@@ -18,12 +18,14 @@ import dev.driftlang.bytewright.exception.BytewrightException;
  *
  * @author Jonathan (GitHub: belicfr)
  */
-public class UnregisteredSwitchCaseValueException extends BytewrightException {
+public class UnregisteredSwitchCaseByValueException extends BytewrightException {
 
     /**
+     * Creates the exception for an unregistered switch case with a given value.
+     *
      * @param value the value that does not have a switch case.
      */
-    public UnregisteredSwitchCaseValueException(final int value) {
+    public UnregisteredSwitchCaseByValueException(final int value) {
         super("No case is registered for value %d.".formatted(value));
     }
 }
