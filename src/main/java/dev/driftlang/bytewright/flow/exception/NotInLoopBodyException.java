@@ -10,7 +10,10 @@
 
 package dev.driftlang.bytewright.flow.exception;
 
-public class NotInLoopBodyException extends RuntimeException {
+import dev.driftlang.bytewright.exception.BytewrightException;
+
+
+public class NotInLoopBodyException extends BytewrightException {
 
     public NotInLoopBodyException() {
         super("This action can only be performed in a loop body.");

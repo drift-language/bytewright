@@ -10,7 +10,10 @@
 
 package dev.driftlang.bytewright.scope.exception;
 
-public class AlreadyBoundNameException extends RuntimeException {
+import dev.driftlang.bytewright.exception.BytewrightException;
+
+
+public class AlreadyBoundNameException extends BytewrightException {
 
     public AlreadyBoundNameException(String name) {
         super("Name '%s' is already bound in this scope.".formatted(name));

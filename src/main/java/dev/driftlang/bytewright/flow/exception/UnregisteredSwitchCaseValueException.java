@@ -10,7 +10,10 @@
 
 package dev.driftlang.bytewright.flow.exception;
 
-public class UnregisteredSwitchCaseValueException extends RuntimeException {
+import dev.driftlang.bytewright.exception.BytewrightException;
+
+
+public class UnregisteredSwitchCaseValueException extends BytewrightException {
 
     public UnregisteredSwitchCaseValueException(int value) {
         super("No case is registered for value %d.".formatted(value));

@@ -10,7 +10,10 @@
 
 package dev.driftlang.bytewright.scope.exception;
 
-public class ScopeAlreadyClosedException extends RuntimeException {
+import dev.driftlang.bytewright.exception.BytewrightException;
+
+
+public class ScopeAlreadyClosedException extends BytewrightException {
 
     public ScopeAlreadyClosedException() {
         super("This scope is already closed and cannot be used anymore.");
