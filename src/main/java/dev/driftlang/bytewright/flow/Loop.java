@@ -35,6 +35,9 @@ public class Loop extends Flow {
     private boolean inBody = false;
 
 
+    /**
+     * @param parentScope the parent instance of the current scope.
+     */
     public Loop(final ScopeManager.Scope parentScope) {
         super(parentScope);
 

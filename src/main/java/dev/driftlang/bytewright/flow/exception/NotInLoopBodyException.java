@@ -13,8 +13,14 @@ package dev.driftlang.bytewright.flow.exception;
 import dev.driftlang.bytewright.exception.BytewrightException;
 
 
+/**
+ * Thrown when an action needing a loop body is performed outside any loop body.
+ *
+ * @author Jonathan (GitHub: belicfr)
+ */
 public class NotInLoopBodyException extends BytewrightException {
 
+    ///
     public NotInLoopBodyException() {
         super("This action can only be performed in a loop body.");
     }

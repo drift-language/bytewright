@@ -21,7 +21,10 @@ package dev.driftlang.bytewright.exception;
  */
 public abstract class BytewrightException extends RuntimeException {
 
-    public BytewrightException(String message) {
+    /**
+     * @param message the exception's message.
+     */
+    public BytewrightException(final String message) {
         super(message);
     }
 }

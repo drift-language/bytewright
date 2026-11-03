@@ -35,6 +35,12 @@ public class Switch extends Flow {
     private final Label defaultLabel;
 
 
+    /**
+     * @param parentScope the parent instance of the current scope.
+     * @param caseLabels a map containing entries linking each value with its
+     *                   {@link Label}.
+     * @param defaultLabel the default {@link Label} instance.
+     */
     public Switch(
             final ScopeManager.Scope parentScope,
             final Map<Integer, Label> caseLabels,
@@ -176,7 +182,10 @@ public class Switch extends Flow {
      */
     public enum Kind {
 
+        /** Represents a table-based switch. */
         TABLE,
+
+        /** Represents a lookup-based switch. */
         LOOKUP
         ;
 

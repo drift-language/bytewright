@@ -34,30 +34,63 @@ import static java.lang.constant.ConstantDescs.*;
  */
 public record JvmType(ClassDesc descriptor) {
 
+    /** Represents the {@code byte} primitive type. */
     public static final JvmType BYTE    = new JvmType(CD_byte);
+
+    /** Represents the {@code short} primitive type. */
     public static final JvmType SHORT   = new JvmType(CD_short);
+
+    /** Represents the {@code int} primitive type. */
     public static final JvmType INT     = new JvmType(CD_int);
+
+    /** Represents the {@code long} primitive type. */
     public static final JvmType LONG    = new JvmType(CD_long);
+
+    /** Represents the {@code float} primitive type. */
     public static final JvmType FLOAT   = new JvmType(CD_float);
+
+    /** Represents the {@code double} primitive type. */
     public static final JvmType DOUBLE  = new JvmType(CD_double);
+
+    /** Represents the {@code char} primitive type. */
     public static final JvmType CHAR    = new JvmType(CD_char);
+
+    /** Represents the {@code boolean} primitive type. */
     public static final JvmType BOOLEAN = new JvmType(CD_boolean);
+
+    /** Represents {@code void}. */
     public static final JvmType VOID    = new JvmType(CD_void);
+
+    /** Represents an {@code Object}. */
     public static final JvmType OBJECT  = new JvmType(CD_Object);
 
 
+    /**
+     * @return the {@link TypeKind} of this type.
+     */
     public TypeKind kind() {
         return TypeKind.fromDescriptor(descriptor().descriptorString());
     }
 
+    /**
+     * @return {@code true} if the type is an array, and {@code false} otherwise.
+     */
     public boolean isArray() {
         return descriptor().isArray();
     }
 
+    /**
+     * @return {@code true} if the type is a primitive, and {@code false}
+     *         otherwise.
+     */
     public boolean isPrimitive() {
         return descriptor().isPrimitive();
     }
 
+    /**
+     * @return the elements' type if the current {@link JvmType} is an array,
+     *         and {@link Optional#empty()} otherwise.
+     */
     public Optional<JvmType> componentType() {
         return isArray()
                 ? Optional.of(new JvmType(descriptor().componentType()))
@@ -65,6 +98,9 @@ public record JvmType(ClassDesc descriptor) {
 
     }
 
+    /**
+     * @return the slot size of the type.
+     */
     public int slotSize() {
         return kind().slotSize();
     }

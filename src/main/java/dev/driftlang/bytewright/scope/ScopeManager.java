@@ -158,6 +158,7 @@ public class ScopeManager {
          *
          * @param name the name of the local variable.
          * @param type the type of the local variable.
+         * @return the declared {@link Local local variable}.
          */
         public Local declare(final String name, final JvmType type) {
             requireNotClosed();
@@ -188,6 +189,10 @@ public class ScopeManager {
             return manager.scope(this);
         }
 
+        /**
+         * @return the {@link CodeBuilder} instance belonging to the
+         *         {@link ScopeManager scope's manager}.
+         */
         public CodeBuilder getBuilder() {
             return manager.getBuilder();
         }

@@ -16,12 +16,12 @@ import java.lang.classfile.Label;
 
 
 /**
+ * A local variable declaration.
  *
- *
- * @param name
- * @param slot
- * @param type
- * @param label
+ * @param name the name of the local variable.
+ * @param slot the slot of the local variable.
+ * @param type the {@link JvmType} of the local variable.
+ * @param label the label belonging to the local variable.
  */
 public record DeclaredLocal(
         String name,

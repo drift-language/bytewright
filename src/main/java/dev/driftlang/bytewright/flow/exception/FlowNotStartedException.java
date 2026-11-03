@@ -13,8 +13,15 @@ package dev.driftlang.bytewright.flow.exception;
 import dev.driftlang.bytewright.exception.BytewrightException;
 
 
+/**
+ * Thrown when an unstarted flow is used. A flow must be started before any
+ * usage.
+ *
+ * @author Jonathan (GitHub: belicfr)
+ */
 public class FlowNotStartedException extends BytewrightException {
 
+    ///
     public FlowNotStartedException() {
         super("The flow has not started yet.");
     }

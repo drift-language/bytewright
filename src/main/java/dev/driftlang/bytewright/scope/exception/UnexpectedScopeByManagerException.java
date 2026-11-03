@@ -10,8 +10,17 @@
 
 package dev.driftlang.bytewright.scope.exception;
 
+import dev.driftlang.bytewright.scope.ScopeManager.Scope;
+
+/**
+ * Thrown when a {@link Scope} is used by another manager than its own. A scope
+ * belongs to only one manager.
+ *
+ * @author Jonathan (GitHub: belicfr)
+ */
 public class UnexpectedScopeByManagerException extends UnexpectedScopeException {
 
+    ///
     public UnexpectedScopeByManagerException() {
         super("the provided scope does not belong to the same provided manager.");
     }
