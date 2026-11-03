@@ -87,6 +87,7 @@
                         <failOnWarnings>true</failOnWarnings>
                         <doclint>all</doclint>
                         <show>protected</show>
+                        <sourcepath>${project.build.directory}/delombok</sourcepath>
                     </configuration>
                 </plugin>
 
@@ -183,6 +184,34 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.6.4</version>
+                <executions>
+                    <execution>
+                        <id>delombok</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${java.home}/bin/java</executable>
+                            <classpathScope>compile</classpathScope>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>lombok.launch.Main</argument>
+                                <argument>delombok</argument>
+                                <argument>${project.basedir}/src/main/java</argument>
+                                <argument>-d</argument>
+                                <argument>${project.build.directory}/delombok</argument>
+                            </arguments>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
