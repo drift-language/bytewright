@@ -1,0 +1,17 @@
+name: Set up JDK
+author: "Jonathan (GitHub: belicfr)"
+description: Temurin JDK with Maven cache
+
+inputs:
+  java-version:
+    required: true
+    description: Java Version to use
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: ${{inputs.java-version}}
+        cache: maven

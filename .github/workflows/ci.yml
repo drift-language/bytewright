@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev ]
+
+  pull_request:
+    branches: [ main, dev ]
+
+concurrency:
+  group: "${{github.workflow}}-${{github.ref}}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # the promised compatible jdk
+  FLOOR_JDK: '26'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # '26' must equal env.FLOOR_JDK
+        jdk: [ '26', '27' ]
+      fail-fast: true
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-jdk
+        with:
+          java-version: ${{matrix.jdk}}
+
+      - run: ./mvnw verify -Pci -B -ntp
+        name: 'Maven: verify'
+
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        name: Test Reports Saving
+        with:
+          name: 'test_reports_saving_jdk${{matrix.jdk}}'
+          path: 'target/surefire-reports'
+
+      # only floor jdk, greater jdks would not change the result.
+      - if: success() && matrix.jdk == env.FLOOR_JDK
+        uses: actions/upload-artifact@v7
+        name: JaCoCo Reports Saving
+        with:
+          name: 'jacoco_reports_saving_jdk${{matrix.jdk}}'
+          path: 'target/site/jacoco'
+
+
+  generateJavadocSite:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-jdk
+        with:
+          java-version: ${{env.FLOOR_JDK}}
+
+      - run: ./mvnw javadoc:javadoc -B -ntp
+

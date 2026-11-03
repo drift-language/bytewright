@@ -1,0 +1,25 @@
+name: JDK early-access
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    # avoid 00:00am -> GitHub scheduler overloader by other workflows.
+    - cron: "30 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-jdk
+        with:
+          java-version: '28-ea'
+
+      - run: ./mvnw verify -B -ntp -Pci
+        name: "Maven: verify"
