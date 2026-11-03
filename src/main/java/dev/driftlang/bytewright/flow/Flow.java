@@ -75,8 +75,11 @@ public abstract class Flow implements AutoCloseable {
     }
 
     /**
+     * Requires that the current flow is started.
+     *
      * @throws FlowNotStartedException if the flow operation has not been
      *                                 started yet.
+     * @see #isStarted()
      */
     protected void requireStarted() {
         if (!isStarted())
@@ -84,8 +87,11 @@ public abstract class Flow implements AutoCloseable {
     }
 
     /**
+     * Requires that the current flow is not started yet.
+     *
      * @throws FlowAlreadyStartedException if the flow operation has already
      *                                     been started.
+     * @see #isStarted()
      */
     protected void requireNotStarted() {
         if (isStarted())
