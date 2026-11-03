@@ -10,14 +10,21 @@
 
 package dev.driftlang.bytewright.condition;
 
+import dev.driftlang.bytewright.condition.exception.UnexpectedValueKindException;
+import dev.driftlang.bytewright.core.JvmType;
+import dev.driftlang.bytewright.core.Value;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.classfile.ClassFile;
+import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.Label;
 import java.lang.classfile.Opcode;
+import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandle;
@@ -25,10 +32,15 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static dev.driftlang.bytewright.condition.Conditions.and;
+import static dev.driftlang.bytewright.condition.Conditions.isNull;
+import static dev.driftlang.bytewright.condition.Conditions.isTrue;
 import static dev.driftlang.bytewright.condition.Conditions.not;
 import static dev.driftlang.bytewright.condition.Conditions.or;
+import static java.lang.constant.ConstantDescs.CD_String;
 import static java.lang.constant.ConstantDescs.CD_boolean;
 import static java.lang.constant.ConstantDescs.CD_Object;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -229,12 +241,162 @@ class ConditionsTest {
     @Nested
     class IsTrue {
 
+        @ParameterizedTest(name = "a={0}, when={1}")
+        @CsvSource({
+                "false, false",
+                "false, true",
+                "true,  false",
+                "true,  true",
+        })
+        void jumpsWhenValueEqualsWhen(final boolean a, final boolean when) throws Throwable {
+            // GIVEN a boolean value reading parameter a
+            Condition condition = isTrue(value(JvmType.BOOLEAN, builder -> builder.iload(0)));
 
+            // WHEN
+            boolean jumped = jumps(condition, when, a, false);
+
+            // THEN
+            assertThat(jumped).isEqualTo(a == when);
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("intCategoryTypes")
+        void acceptsIntCategoryKinds(final JvmType type) throws Throwable {
+            // GIVEN a value of an int-category type reading parameter a (an
+            // int on the operand stack, whatever its declared type)
+            Condition condition = isTrue(value(type, builder -> builder.iload(0)));
+
+            // WHEN
+            boolean jumpedOnTrue = jumps(condition, true, true, false);
+            boolean jumpedOnFalse = jumps(condition, true, false, false);
+
+            // THEN
+            assertSoftly(softly -> {
+                softly.assertThat(jumpedOnTrue).isTrue();
+                softly.assertThat(jumpedOnFalse).isFalse();
+            });
+        }
+
+        @ParameterizedTest(name = "{1}")
+        @MethodSource("nonIntCategoryTypes")
+        void nonIntCategoryKind_throwsUnexpectedValueKindException(final JvmType type, final String kindName) {
+            // GIVEN a value that is not of an int-category type
+            Value value = value(type, builder -> { });
+
+            // WHEN / THEN building the condition already throws, before any jump
+            assertThatThrownBy(() -> isTrue(value))
+                    .isInstanceOf(UnexpectedValueKindException.class)
+                    .hasMessage("Unexpected value kind: %s instead of BOOLEAN or BYTE or SHORT or CHAR or INT.", kindName);
+        }
+
+        @Test
+        void building_emitsNothing() {
+            // GIVEN a value that records every time it is asked to emit
+            List<String> emitted = new ArrayList<>();
+            Value value = value(JvmType.BOOLEAN, builder -> emitted.add("value"));
+
+            // WHEN building the condition without calling jump
+            Condition condition = isTrue(value);
+
+            // THEN the value has not been emitted yet
+            assertSoftly(softly -> {
+                softly.assertThat(condition).isNotNull();
+                softly.assertThat(emitted).isEmpty();
+            });
+        }
+
+        static Stream<JvmType> intCategoryTypes() {
+            return Stream.of(JvmType.BOOLEAN, JvmType.BYTE, JvmType.SHORT, JvmType.CHAR, JvmType.INT);
+        }
+
+        static Stream<Arguments> nonIntCategoryTypes() {
+            return Stream.of(
+                    Arguments.of(JvmType.LONG, "LONG"),
+                    Arguments.of(JvmType.FLOAT, "FLOAT"),
+                    Arguments.of(JvmType.DOUBLE, "DOUBLE"),
+                    Arguments.of(JvmType.OBJECT, "REFERENCE"),
+                    Arguments.of(JvmType.arrayOf(JvmType.INT), "REFERENCE"));
+        }
     }
 
 
     @Nested
     class IsNull {
+
+        @ParameterizedTest(name = "null={0}, when={1}")
+        @CsvSource({
+                "false, false",
+                "false, true",
+                "true,  false",
+                "true,  true",
+        })
+        void jumpsWhenNullityEqualsWhen(final boolean isNullValue, final boolean when) throws Throwable {
+            // GIVEN a reference value that is either null or a string constant
+            Value value = isNullValue
+                    ? value(JvmType.OBJECT, CodeBuilder::aconst_null)
+                    : value(JvmType.of(CD_String), builder -> builder.ldc("x"));
+
+            Condition condition = isNull(value);
+
+            // WHEN
+            boolean jumped = jumps(condition, when, false, false);
+
+            // THEN
+            assertThat(jumped).isEqualTo(isNullValue == when);
+        }
+
+        @ParameterizedTest(name = "when={0}")
+        @CsvSource({"false", "true"})
+        void acceptsArrayValue(final boolean when) throws Throwable {
+            // GIVEN a freshly allocated (so non-null) int array
+            Value array = value(JvmType.arrayOf(JvmType.INT), builder -> builder
+                    .iconst_1()
+                    .newarray(TypeKind.INT));
+
+            Condition condition = isNull(array);
+
+            // WHEN
+            boolean jumped = jumps(condition, when, false, false);
+
+            // THEN arrays are references: accepted, and never null here
+            assertThat(jumped).isEqualTo(!when);
+        }
+
+        @ParameterizedTest(name = "{1}")
+        @MethodSource("primitiveTypes")
+        void primitiveKind_throwsUnexpectedValueKindException(final JvmType type, final String kindName) {
+            // GIVEN a value of a primitive type
+            Value value = value(type, builder -> { });
+
+            // WHEN / THEN building the condition already throws, before any jump
+            assertThatThrownBy(() -> isNull(value))
+                    .isInstanceOf(UnexpectedValueKindException.class)
+                    .hasMessage("Unexpected value kind: %s instead of REFERENCE.", kindName);
+        }
+
+        @Test
+        void building_emitsNothing() {
+            // GIVEN a value that records every time it is asked to emit
+            List<String> emitted = new ArrayList<>();
+            Value value = value(JvmType.OBJECT, builder -> emitted.add("value"));
+
+            // WHEN building the condition without calling jump
+            Condition condition = isNull(value);
+
+            // THEN the value has not been emitted yet
+            assertSoftly(softly -> {
+                softly.assertThat(condition).isNotNull();
+                softly.assertThat(emitted).isEmpty();
+            });
+        }
+
+        static Stream<Arguments> primitiveTypes() {
+            return Stream.of(
+                    Arguments.of(JvmType.INT, "INT"),
+                    Arguments.of(JvmType.BOOLEAN, "BOOLEAN"),
+                    Arguments.of(JvmType.LONG, "LONG"),
+                    Arguments.of(JvmType.DOUBLE, "DOUBLE"));
+        }
     }
 
 
@@ -336,6 +498,25 @@ class ConditionsTest {
         return (builder, target, when) -> {
             builder.iload(slot)
                     .branch(when ? Opcode.IFNE : Opcode.IFEQ, target);
+        };
+    }
+
+    /**
+     * Returns a {@link Value} of the declared {@code type}, emitted by
+     * {@code emit}.
+     */
+    private static Value value(final JvmType type, final Consumer<CodeBuilder> emit) {
+        return new Value() {
+
+            @Override
+            public JvmType type() {
+                return type;
+            }
+
+            @Override
+            public void emit(final CodeBuilder builder) {
+                emit.accept(builder);
+            }
         };
     }
 

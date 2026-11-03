@@ -11,7 +11,6 @@
 package dev.driftlang.bytewright.condition;
 
 import dev.driftlang.bytewright.condition.exception.UnexpectedValueKindException;
-import dev.driftlang.bytewright.core.JvmType;
 import dev.driftlang.bytewright.core.Value;
 import lombok.NoArgsConstructor;
 
@@ -21,6 +20,7 @@ import java.lang.classfile.Opcode;
 import java.lang.classfile.TypeKind;
 
 import static java.lang.classfile.Opcode.*;
+import static java.util.Arrays.stream;
 import static lombok.AccessLevel.PRIVATE;
 
 
@@ -130,7 +130,7 @@ public final class Conditions {
      * @see Opcode#IFNE
      */
     public static Condition isTrue(final Value value) {
-        requireInteger(value);
+        requireBooleanable(value);
 
         return (builder, target, when) -> {
             value.emit(builder);
@@ -162,17 +162,23 @@ public final class Conditions {
 
 
     /**
-     * Requires the given {@code value} to be an {@link TypeKind#INT integer}
-     * and throws otherwise.
+     * Requires the given {@code value} to be of a boolean-compatible type and
+     * throws otherwise.
      *
      * @param value the value to check.
      * @throws UnexpectedValueKindException if the value is not an integer.
      */
-    private static void requireInteger(final Value value) {
+    private static void requireBooleanable(final Value value) {
+        final TypeKind[] booleanableTypes = new TypeKind[]{
+                TypeKind.BOOLEAN,
+                TypeKind.BYTE,
+                TypeKind.SHORT,
+                TypeKind.CHAR,
+                TypeKind.INT
+        };
         final TypeKind actualKind = value.type().kind();
-        final TypeKind integerKind = TypeKind.INT;
 
-        requireValueKind(actualKind, integerKind);
+        requireValueKind(booleanableTypes, actualKind);
     }
 
     /**
@@ -186,10 +192,28 @@ public final class Conditions {
      *                                      an array.
      */
     private static void requireReference(final Value value) {
-        final TypeKind actualKind = value.type().kind();
         final TypeKind integerKind = TypeKind.REFERENCE;
+        final TypeKind actualKind = value.type().kind();
 
-        requireValueKind(actualKind, integerKind);
+        requireValueKind(integerKind, actualKind);
+    }
+
+    /**
+     * Requires the given {@code actual} {@link TypeKind} to be included into
+     * the {@code supported} array and throws otherwise.
+     *
+     * @param supported the supported kinds array where the actual value's type
+     *                  must be included.
+     * @param actual the actual kind that must be included in the supported
+     *               types array.
+     * @throws UnexpectedValueKindException if the constraint is not respected.
+     */
+    private static void requireValueKind(final TypeKind[] supported, final TypeKind actual) {
+        boolean isActualTypeSupported = stream(supported)
+                .anyMatch(s -> s == actual);
+
+        if (!isActualTypeSupported)
+            throw new UnexpectedValueKindException(supported, actual);
     }
 
     /**
@@ -198,6 +222,7 @@ public final class Conditions {
      *
      * @param required the required kind that the actual must equal.
      * @param actual the actual kind that must equal the required one.
+     * @throws UnexpectedValueKindException if the constraint is not respected.
      */
     private static void requireValueKind(final TypeKind required, final TypeKind actual) {
         if (actual != required)
