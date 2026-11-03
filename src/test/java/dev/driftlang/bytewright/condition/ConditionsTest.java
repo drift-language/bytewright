@@ -228,6 +228,8 @@ class ConditionsTest {
 
     @Nested
     class IsTrue {
+
+
     }
 
 
@@ -338,11 +340,27 @@ class ConditionsTest {
     }
 
     /**
+     * Runs {@code condition} emitted with {@code when}, on inputs {@code a}
+     * and {@code b}.
+     */
+    private static boolean jumps(
+            final Condition condition,
+            final boolean when,
+            final boolean a,
+            final boolean b) throws Throwable {
+
+        return (boolean) compile(condition, when).invokeExact(a, b);
+    }
+
+    /**
      * Generates and loads a {@code test(a, b)} method that emits
      * {@code condition} with the given {@code when}, and returns whether
      * the jump was taken.
      */
-    private static MethodHandle compile(final Condition condition, final boolean when) throws Exception {
+    private static MethodHandle compile(
+            final Condition condition,
+            final boolean when) throws Exception {
+
         byte[] bytes = ClassFile.of().build(HOST, classBuilder -> classBuilder
                 .withSuperclass(CD_Object)
                 .withMethodBody(
@@ -354,7 +372,8 @@ class ConditionsTest {
 
                             condition.jump(codeBuilder, jumped, when);
 
-                            codeBuilder.iconst_0()
+                            codeBuilder
+                                    .iconst_0()
                                     .ireturn()
                                     .labelBinding(jumped)
                                     .iconst_1()
@@ -364,14 +383,5 @@ class ConditionsTest {
         MethodHandles.Lookup lookup = MethodHandles.lookup().defineHiddenClass(bytes, true);
 
         return lookup.findStatic(lookup.lookupClass(), "test", TEST_TYPE);
-    }
-
-    /**
-     * Runs {@code condition} emitted with {@code when}, on inputs {@code a}
-     * and {@code b}.
-     */
-    private static boolean jumps(final Condition condition, final boolean when,
-                                 final boolean a, final boolean b) throws Throwable {
-        return (boolean) compile(condition, when).invokeExact(a, b);
     }
 }

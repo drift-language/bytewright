@@ -10,17 +10,23 @@
 
 package dev.driftlang.bytewright.condition;
 
+import dev.driftlang.bytewright.condition.exception.UnexpectedValueKindException;
+import dev.driftlang.bytewright.core.JvmType;
+import dev.driftlang.bytewright.core.Value;
 import lombok.NoArgsConstructor;
 
 import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.Label;
+import java.lang.classfile.Opcode;
+import java.lang.classfile.TypeKind;
 
+import static java.lang.classfile.Opcode.*;
 import static lombok.AccessLevel.PRIVATE;
 
 
 /**
  * Factory methods that build and combine {@link Condition} instances, either
- * from other conditions or, later, from values.
+ * from other conditions or values.
  * <p>
  * The returned conditions only emit bytecode when their {@link
  * Condition#jump(CodeBuilder, Label, boolean) jump} method is called; building
@@ -31,6 +37,10 @@ import static lombok.AccessLevel.PRIVATE;
 @NoArgsConstructor(access = PRIVATE)
 public final class Conditions {
 
+    /*
+            FROM OTHER CONDITIONS
+     */
+
     /**
      * Returns a new {@link Condition} that is true exactly when {@code
      * condition} is false.
@@ -39,21 +49,20 @@ public final class Conditions {
      * @return the created condition object.
      */
     public static Condition not(final Condition condition) {
-        return (builder, target, when) -> {
-            condition.jump(builder, target, !when);
-        };
+        return (builder, target, when) ->
+                condition.jump(builder, target, !when);
     }
 
-     /**
-      * Returns a new {@link Condition} that is true if both {@code left} and
-      * {@code right} are true. Short-circuit: {@code right} is only evaluated
-      * if {@code left} is true.
-      *
-      * @param left the condition evaluated first.
-      * @param right the condition evaluated only if {@code left} is true.
-      * @return the created condition object that is the conjunction of {@code
-      *         left} and {@code right}.
-      */
+    /**
+     * Returns a new {@link Condition} that is true if both {@code left} and
+     * {@code right} are true. Short-circuit: {@code right} is only evaluated
+     * if {@code left} is true.
+     *
+     * @param left  the condition evaluated first.
+     * @param right the condition evaluated only if {@code left} is true.
+     * @return the created condition object that is the conjunction of {@code
+     * left} and {@code right}.
+     */
     public static Condition and(final Condition left, final Condition right) {
         return (builder, target, when) -> {
             if (!when) {
@@ -80,10 +89,10 @@ public final class Conditions {
      * Returns a new {@link Condition} that is true if {@code left} or {@code
      * right} or both are true.
      *
-     * @param left the condition evaluated first.
+     * @param left  the condition evaluated first.
      * @param right the condition evaluated only if {@code left} is false.
      * @return the created condition object that is the disjunction of {@code
-     *         left} and {@code right}.
+     * left} and {@code right}.
      */
     public static Condition or(final Condition left, final Condition right) {
         return (builder, target, when) -> {
@@ -103,5 +112,95 @@ public final class Conditions {
             right.jumpIfTrue(builder, target);
             // NOTE: if this line is reached, left is false.
         };
+    }
+
+
+    /*
+            FROM VALUES
+     */
+
+    /**
+     * Returns a new {@link Condition} that is true if {@code value} is non-zero
+     * (true). Since the JVM represents booleans as integers, {@code value}
+     * must be of an int-category type.
+     *
+     * @param value the value to evaluate.
+     * @return the created condition object.
+     * @see Opcode#IFEQ
+     * @see Opcode#IFNE
+     */
+    public static Condition isTrue(final Value value) {
+        requireInteger(value);
+
+        return (builder, target, when) -> {
+            value.emit(builder);
+
+            builder.branch(when ? IFNE : IFEQ, target);
+        };
+    }
+
+    /**
+     * Returns a new {@link Condition} that is true if {@code value} is null.
+     * According to the used {@code IFNULL / IFNONNULL} opcodes, {@code value}
+     * must be of a reference type (object or array).
+     *
+     * @param value the value to evaluate.
+     * @return the created condition object.
+     * @see Opcode#IFNULL
+     * @see Opcode#IFNONNULL
+     */
+    public static Condition isNull(final Value value) {
+        requireReference(value);
+        // NOTE: an array is considered as a reference.
+
+        return (builder, target, when) -> {
+            value.emit(builder);
+
+            builder.branch(when ? IFNULL : IFNONNULL, target);
+        };
+    }
+
+
+    /**
+     * Requires the given {@code value} to be an {@link TypeKind#INT integer}
+     * and throws otherwise.
+     *
+     * @param value the value to check.
+     * @throws UnexpectedValueKindException if the value is not an integer.
+     */
+    private static void requireInteger(final Value value) {
+        final TypeKind actualKind = value.type().kind();
+        final TypeKind integerKind = TypeKind.INT;
+
+        requireValueKind(actualKind, integerKind);
+    }
+
+    /**
+     * Requires the given {@code value} to be a {@link TypeKind#REFERENCE
+     * reference} and throws otherwise.
+     * <p>
+     * <strong>IMPORTANT:</strong> JVM considers an array as a reference.
+     *
+     * @param value the value to check.
+     * @throws UnexpectedValueKindException if the value is not a reference or
+     *                                      an array.
+     */
+    private static void requireReference(final Value value) {
+        final TypeKind actualKind = value.type().kind();
+        final TypeKind integerKind = TypeKind.REFERENCE;
+
+        requireValueKind(actualKind, integerKind);
+    }
+
+    /**
+     * Requires the given {@code actual} {@link TypeKind} to equals the
+     * {@code required} one and throws otherwise.
+     *
+     * @param required the required kind that the actual must equal.
+     * @param actual the actual kind that must equal the required one.
+     */
+    private static void requireValueKind(final TypeKind required, final TypeKind actual) {
+        if (actual != required)
+            throw new UnexpectedValueKindException(required, actual);
     }
 }
