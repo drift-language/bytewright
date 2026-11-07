@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Drift Programming Language
- * ByteWright Library
+ * Bytewright Library
  *
  * Copyright (c) 2026. Jonathan (GitHub: belicfr)
  *

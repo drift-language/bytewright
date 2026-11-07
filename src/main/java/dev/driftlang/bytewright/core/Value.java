@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Drift Programming Language
- * ByteWright Library
+ * Bytewright Library
  *
  * Copyright (c) 2026. Jonathan (GitHub: belicfr)
  *
@@ -17,9 +17,9 @@ import java.lang.classfile.CodeBuilder;
 /**
  * Something that knows how to push itself onto the operand stack.
  * <p>
- * This is ByteWright's entry point and its inversion-of-control boundary:
+ * This is Bytewright's entry point and its inversion-of-control boundary:
  * the consuming language implements {@code Value} for its own expressions,
- * so ByteWright never sees that language's IR, only its {@link JvmType} and
+ * so Bytewright never sees that language's IR, only its {@link JvmType} and
  * the code that materializes it.
  * <p>
  * Implementations write directly into the caller's {@link CodeBuilder};

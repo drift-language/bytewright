@@ -8,7 +8,7 @@
     <artifactId>bytewright</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>ByteWright</name>
+    <name>Bytewright</name>
     <description>
         A structured JVM bytecode-generation toolkit built on java.lang.classfile,
         for authors of compilers and languages targeting the JVM.
@@ -114,7 +114,7 @@
                             <rules>
                                 <requireJavaVersion>
                                     <version>[26,)</version>
-                                    <message>ByteWright needs JDK 26+ (java.lang.classfile). Set JAVA_HOME to a JDK 26 install.</message>
+                                    <message>Bytewright needs JDK 26+ (java.lang.classfile). Set JAVA_HOME to a JDK 26 install.</message>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
                                     <version>[3.9,)</version>
